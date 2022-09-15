@@ -1,0 +1,92 @@
+script
+    : (module|wire)* main
+    ;
+module
+    : MOD LBRACE INPUT LBRACE wire_content RBRACE OUTPUT LBRACE wire_content RBRACE block RBRACE
+    ;
+wire
+    : WIRE LBRACE wire_content RBRACE
+    ;
+main
+    : MAIN LBRACE block RBRACE
+    ;
+wire_content
+    : ( type IDEN SEMICOLON wire_content |
+      LBRACK INT RBRACK IDEN IDEN SEMICOLON wire_content ) *
+    ;
+block
+    : (instruction)*
+    ;
+instruction
+    : DEFINE type item SEMICOLON
+    : CONNECT item item SEMICOLON
+    : LOOP VAR IN range LBRACE block RBRACE
+    ;
+item
+    : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*
+    ;
+type
+    : IDEN
+    : LBRACK INT RBRACK IDEN
+    ;
+expr
+    : term ((PLUS|MINUS) term)*
+    ;
+term
+    : factor ((MULT|DIV) factor)*
+    ;
+factor
+    : VAR
+    : INT
+    : LPAREN expr RPAREN
+    ;
+range
+    : LPAREN INT COMMA INT RPAREN
+    ;
+
+examples:
+```
+mod 1bitreg {
+    input{
+        bit data;
+        bit set;
+    }
+    output{
+        bit value;
+    }
+    @ xor mem;
+    = mem mem;
+    @ or reset;
+    @ and switch_on;
+    @ and flip_if_on;
+    = set reset;
+    = reset flip_if_on;
+    = mem flip_if_on;
+    = flip_if_on mem;
+    = set switch_on;
+    = data switch_on;
+    = switch_on mem;
+    = mem value;
+}
+
+wire byte {
+    [8]bit data;
+}
+
+mod 8bitreg {
+    input{
+        byte data;
+        bit set;
+    }
+    output{
+        byte value;
+    }
+    @ [8]1bitreg registers;
+    loop $n in (1,8) {
+        = data[$n] registers[$n].data;
+        = set registers.[$n]set;
+        = registers[$n].value value[$n]
+    } 
+}
+
+```
