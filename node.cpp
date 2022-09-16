@@ -8,7 +8,7 @@ namespace snowlang
     Node::Node(
         enum NodeType t_type,
         variant<NumberValue, BinOpValue> t_value)
-        : type(t_type), value(t_value) {}
+        : type(t_type), value(move(t_value)) {}
 
     string Node::reprNodeType(enum NodeType nodeType)
     {

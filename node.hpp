@@ -26,16 +26,16 @@ namespace snowlang
 
     struct BinOpValue
     {
-        std::shared_ptr<Node> left{nullptr};
-        std::shared_ptr<Node> right{nullptr};
+        std::unique_ptr<Node> left{nullptr};
+        std::unique_ptr<Node> right{nullptr};
         Token operationToken;
 
         BinOpValue(
-            std::shared_ptr<Node> t_left,
-            std::shared_ptr<Node> t_right,
+            std::unique_ptr<Node> t_left,
+            std::unique_ptr<Node> t_right,
             Token t_operationToken)
-            : left(t_left),
-              right(t_right),
+            : left(std::move(t_left)),
+              right(std::move(t_right)),
               operationToken(t_operationToken) {}
     };
 

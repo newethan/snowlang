@@ -12,12 +12,12 @@ namespace snowlang::parser
         std::vector<Token> tokens;
         int pos = 0;
         void advance(int positions);
-        static void printAst(std::shared_ptr<Node> ast,
+        static void printAst(std::unique_ptr<Node> &ast,
                              int indent = 0);
 
         // private:
-        std::shared_ptr<Node> expression();
-        std::shared_ptr<Node> term();
-        std::shared_ptr<Node> factor();
+        std::unique_ptr<Node> expression();
+        std::unique_ptr<Node> term();
+        std::unique_ptr<Node> factor();
     };
 }
