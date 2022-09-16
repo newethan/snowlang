@@ -5,28 +5,38 @@
 
 namespace snowlang
 {
+
+    class Node;
+
     enum NodeType
     {
         NT_BINOP,
-        NT_INT
+        NT_NUMBER
     };
 
-    union NodeValue
-    {
-        struct BinOpValue binOpValue;
-        struct NumberValue numberValue;
-    };
+    /////////////// value structs
 
-    // VALUE STRUCTS
-    struct BinOpValue
-    {
-        Node left;
-        Node right;
-        Token operationToken;
-    };
     struct NumberValue
     {
         Token numberToken;
+
+        NumberValue(Token t_numberToken)
+            : numberToken(t_numberToken) {}
+    };
+
+    struct BinOpValue
+    {
+        std::shared_ptr<Node> left{nullptr};
+        std::shared_ptr<Node> right{nullptr};
+        Token operationToken;
+
+        BinOpValue(
+            std::shared_ptr<Node> t_left,
+            std::shared_ptr<Node> t_right,
+            Token t_operationToken)
+            : left(t_left),
+              right(t_right),
+              operationToken(t_operationToken) {}
     };
 
     ///////////////
@@ -35,6 +45,13 @@ namespace snowlang
     {
     public:
         enum NodeType type;
-        union NodeValue value;
+
+        // By default number value
+        std::variant<NumberValue, BinOpValue> value;
+
+        Node(enum NodeType t_type,
+             std::variant<NumberValue, BinOpValue> t_value);
+
+        static std::string reprNodeType(enum NodeType nodeType);
     };
 }

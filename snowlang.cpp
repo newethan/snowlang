@@ -1,10 +1,18 @@
 #include "snowlang.hpp"
 #include "lexer.hpp"
-using namespace std;
+#include "parser.hpp"
 
-int main()
+using namespace std;
+using namespace snowlang;
+
+int main(int argc, char *argv[])
 {
-    const char *text =
+    if (argc < 2)
+    {
+        cout << "Missing argument. Program terminated." << endl;
+        exit(1);
+    }
+    const char *text1 =
         "mod 1bitreg {\n"
         "   input{\n"
         "       bit data;"
@@ -45,10 +53,14 @@ int main()
         "        = registers[$n].value value[$n]"
         "    } "
         "}";
-    snowlang::lexer::Lexer lexer(text, "test.sno");
-    while (lexer.hasMoreTokens())
-    {
-        cout << lexer.peek(0).repr() << endl;
-        lexer.advance(1);
-    }
+    const char *text2 = "2*2";
+
+    lexer::Lexer lexer(argv[1], "test.sno");
+    for (auto &token : lexer.tokens)
+        cout << token.repr() << endl;
+
+    // TODO: MAKE SURE THIS IS CREATING A COPY OF lexer.tokens
+    parser::Parser parser(lexer.tokens);
+    auto ast = parser.expression();
+    parser::Parser::printAst(ast);
 }

@@ -56,8 +56,8 @@ namespace snowlang
         {std::regex("^="), TT_CONNECT},
         {std::regex("^loop"), TT_LOOP},
         {std::regex("^\\$\\w+"), TT_VAR},
-        {std::regex("^\\w+"), TT_IDEN},
-        {std::regex("^\\d+"), TT_INT}
+        {std::regex("^\\d+"), TT_INT},
+        {std::regex("^\\w+"), TT_IDEN}
     };
 
     class Token

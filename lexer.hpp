@@ -1,3 +1,5 @@
+#pragma once
+
 #include "snowlang.hpp"
 #include "token.hpp"
 
@@ -7,11 +9,11 @@ namespace snowlang::lexer
     {
     public:
         Lexer(std::string t_text, std::string t_filename);
+        std::vector<Token> tokens;
 
     private:
         std::string text;
         std::string filename;
-        std::vector<Token> tokens;
         void generateTokens();
         Token generateNextToken(int &textPos);
     };
