@@ -6,58 +6,62 @@ using namespace std;
 
 namespace snowlang::parser
 {
-    Parser::Parser(std::vector<Token> t_tokens)
-        : tokens(t_tokens) {}
 
-    void Parser::advance(int positions)
+    namespace // Implementation functions
     {
-        pos += positions;
-    }
-
-    unique_ptr<Node> Parser::factor()
-    {
-        Token current = tokens[pos];
-        if (current.type == TT_INT || current.type == TT_VAR)
+        unique_ptr<Node> factor(ParseState &state)
         {
-            advance(1);
-            return make_unique<Node>(NT_NUMBER, NumberValue(current));
+            Token current = state.tokens[state.pos];
+            if (current.type == TT_INT || current.type == TT_VAR)
+            {
+                state.advance();
+                return make_unique<Node>(NT_NUMBER, NumberValue(current));
+            }
+            return nullptr;
         }
-        return nullptr;
-    }
 
-    unique_ptr<Node> Parser::term()
-    {
-        auto left = factor();
-
-        while (tokens[pos].type == TT_MULT || tokens[pos].type == TT_DIV)
+        unique_ptr<Node> term(ParseState &state)
         {
-            auto operationToken = tokens[pos];
-            advance(1);
-            auto right = factor();
-            left = make_unique<Node>(
-                NT_BINOP,
-                BinOpValue(move(left), move(right), operationToken));
+            auto left = factor(state);
+
+            while (state.tokens[state.pos].type == TT_MULT ||
+                   state.tokens[state.pos].type == TT_DIV)
+            {
+                auto operationToken = state.tokens[state.pos];
+                state.advance();
+                auto right = factor(state);
+                left = make_unique<Node>(
+                    NT_BINOP,
+                    BinOpValue(move(left), move(right), operationToken));
+            }
+            return left;
         }
-        return left;
-    }
 
-    unique_ptr<Node> Parser::expression()
-    {
-        auto left = term();
-
-        while (tokens[pos].type == TT_PLUS || tokens[pos].type == TT_MINUS)
+        unique_ptr<Node> expression(ParseState &state)
         {
-            auto operationToken = tokens[pos];
-            advance(1);
-            auto right = term();
-            left = make_unique<Node>(
-                NT_BINOP,
-                BinOpValue(move(left), move(right), operationToken));
+            auto left = term(state);
+
+            while (state.tokens[state.pos].type == TT_PLUS ||
+                   state.tokens[state.pos].type == TT_MINUS)
+            {
+                auto operationToken = state.tokens[state.pos];
+                state.advance();
+                auto right = term(state);
+                left = make_unique<Node>(
+                    NT_BINOP,
+                    BinOpValue(move(left), move(right), operationToken));
+            }
+            return left;
         }
-        return left;
+    } // End of anonymous namespace
+
+    unique_ptr<Node> parse(const vector<Token> &tokens)
+    {
+        ParseState state = {tokens};
+        return expression(state);
     }
 
-    void Parser::printAst(std::unique_ptr<Node> &ast, int indent)
+    void printAst(std::unique_ptr<Node> &ast, int indent)
     {
         for (int i = 0; i < indent; i++)
             cout << "\t";

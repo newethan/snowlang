@@ -5,19 +5,13 @@
 
 namespace snowlang::parser
 {
-    class Parser
+    struct ParseState
     {
-    public:
-        Parser(std::vector<Token> t_tokens);
-        std::vector<Token> tokens;
+        const std::vector<Token> &tokens;
         int pos = 0;
-        void advance(int positions);
-        static void printAst(std::unique_ptr<Node> &ast,
-                             int indent = 0);
-
-        // private:
-        std::unique_ptr<Node> expression();
-        std::unique_ptr<Node> term();
-        std::unique_ptr<Node> factor();
+        void advance(int positions = 1) { pos += positions; }
     };
+    void printAst(std::unique_ptr<Node> &ast,
+                  int indent = 0);
+    std::unique_ptr<Node> parse(const std::vector<Token> &tokens);
 }

@@ -3,41 +3,48 @@ using namespace std;
 
 namespace snowlang::lexer
 {
-    Lexer::Lexer(string t_text, string t_filename)
-        : text(t_text), filename(t_filename)
-    {
-        generateTokens();
-    }
 
-    void Lexer::generateTokens()
+    namespace // Implementation functions
     {
-        int textPos = 0;
-        while (textPos < text.length())
+        Token generateNextToken(LexState &state)
         {
-            auto nextToken = generateNextToken(textPos);
+            string slicedText =
+                state.text.substr(
+                    state.pos,
+                    state.text.length() - state.pos);
+            for (const auto &keyValuePair : tokenRegexMap)
+            {
+                const auto &tokenRegex = keyValuePair.first;
+                const auto &tokenType = keyValuePair.second;
+                smatch match;
+                regex_search(slicedText, match, tokenRegex);
+                if (match.size() == 0)
+                    continue;
+                int tokenStart = state.pos;
+                state.advance(match[0].length());
+                return Token(
+                    tokenType,
+                    match[0],
+                    tokenStart,
+                    state.pos - 1);
+            }
+            cout << "Error! Token not recognized." << endl;
+            cout << slicedText << endl;
+            exit(1);
+        }
+    } // End of anonymous namespace
+
+    vector<Token> lex(const string &text)
+    {
+        vector<Token> tokens;
+        LexState state{text};
+        while (state.pos < text.length())
+        {
+            auto nextToken = generateNextToken(state);
             if (nextToken.type == TT_WHITESPACE)
                 continue;
             tokens.push_back(nextToken);
         }
-    }
-
-    Token Lexer::generateNextToken(int &textPos)
-    {
-        string slicedText = text.substr(textPos, text.length() - textPos);
-        for (const auto &keyValuePair : tokenRegexMap)
-        {
-            const auto tokenRegex = keyValuePair.first;
-            const auto tokenType = keyValuePair.second;
-            smatch match;
-            regex_search(slicedText, match, tokenRegex);
-            if (match.size() == 0)
-                continue;
-            int tokenStart = textPos;
-            textPos += match[0].length();
-            return Token(tokenType, match[0], tokenStart, textPos - 1);
-        }
-        cout << "Error! Token not recognized." << endl;
-        cout << slicedText << endl;
-        exit(1);
+        return tokens;
     }
 }

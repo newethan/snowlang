@@ -5,16 +5,11 @@
 
 namespace snowlang::lexer
 {
-    class Lexer
+    struct LexState
     {
-    public:
-        Lexer(std::string t_text, std::string t_filename);
-        std::vector<Token> tokens;
-
-    private:
-        std::string text;
-        std::string filename;
-        void generateTokens();
-        Token generateNextToken(int &textPos);
+        const std::string &text;
+        int pos = 0;
+        void advance(int positions = 1) { pos += positions; }
     };
+    std::vector<Token> lex(const std::string &text);
 }
