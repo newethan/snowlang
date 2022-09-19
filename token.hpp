@@ -33,7 +33,7 @@ namespace snowlang
         TT_INT
     };
 
-    const std::vector<std::pair<std::regex, enum TokenType>> tokenRegexMap {
+    const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap {
         {std::regex("^\\s+"), TT_WHITESPACE}, // whitespace
         {std::regex("^\\{"), TT_LBRACE},      // brackets
         {std::regex("^\\}"), TT_RBRACE},

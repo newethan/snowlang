@@ -1,4 +1,5 @@
 #include "lexer.hpp"
+#include "errorHandler.hpp"
 using namespace std;
 
 namespace snowlang::lexer
@@ -28,9 +29,8 @@ namespace snowlang::lexer
                     tokenStart,
                     state.pos - 1);
             }
-            cout << "Error! Token not recognized." << endl;
-            cout << slicedText << endl;
-            exit(1);
+            throw errorHandler::SnowlangException(
+                state.pos, state.pos, "Invaild token.");
         }
     } // End of anonymous namespace
 
@@ -40,7 +40,14 @@ namespace snowlang::lexer
         LexState state{text};
         while (state.pos < text.length())
         {
-            auto nextToken = generateNextToken(state);
+            Token nextToken;
+            try
+            {
+                nextToken = generateNextToken(state);
+            }
+            catch (errorHandler::SnowlangException e){
+                throw;
+            }
             if (nextToken.type == TT_WHITESPACE)
                 continue;
             tokens.push_back(nextToken);

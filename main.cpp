@@ -1,7 +1,7 @@
 #include "snowlang.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "program.hpp"
+#include "errorHandler.hpp"
 
 using namespace std;
 using namespace snowlang;
@@ -54,15 +54,48 @@ int main(int argc, char *argv[])
         "        = registers[$n].value value[$n]\n"
         "    } \n"
         "}";
-    string text2 = "2*2";
+    string filename = argv[1];
+    fstream file;
+    file.open(filename, ios::in);
+    if (!file)
+    {
+        cout << "File '" << filename << "' does not exist." << endl;
+        exit(1);
+    }
+    stringstream buf;
+    buf << file.rdbuf();
+    string text =  buf.str();
 
-    auto tokens = lexer::lex(argv[1]);
+    vector<Token> tokens;
+    try
+    {
+        tokens = lexer::lex(text);
+    }
+    catch(errorHandler::SnowlangException e)
+    {
+        errorHandler::fatalErrorAbort(
+            text,
+            filename,
+            e.posStart,
+            e.posEnd,
+            e.message);
+    }
     for (auto &token : tokens)
         cout << token.repr() << endl;
-
-    auto ast = parser::parse(tokens);
+    unique_ptr<Node> ast;
+    try
+    {
+        ast = parser::parse(tokens);
+    }
+    catch (errorHandler::SnowlangException e)
+    {
+        errorHandler::fatalErrorAbort(
+                    text,
+                    filename,
+                    e.posStart,
+                    e.posEnd,
+                    e.message);
+    }
     parser::printAst(ast);
 
-    Program prog(text1, "test.sno");
-    prog.fatalErrorAbort(31, 33, "Unexpected Token");
 }
