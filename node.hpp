@@ -11,6 +11,7 @@ namespace snowlang
     enum NodeType
     {
         NT_BINOP,
+        NT_UNOP,
         NT_NUMBER
     };
 
@@ -23,7 +24,6 @@ namespace snowlang
         NumberValue(Token t_numberToken)
             : numberToken(t_numberToken) {}
     };
-
     struct BinOpValue
     {
         std::unique_ptr<Node> left{nullptr};
@@ -39,6 +39,15 @@ namespace snowlang
               operationToken(t_operationToken) {}
     };
 
+    struct UnOpValue
+    {
+        std::unique_ptr<Node> node{nullptr};
+        Token operationToken;
+
+        UnOpValue(std::unique_ptr<Node> t_node, Token t_operationToken)
+            : node(std::move(t_node)), operationToken(t_operationToken) {}
+    };
+
     ///////////////
 
     class Node
@@ -47,10 +56,14 @@ namespace snowlang
         enum NodeType type;
 
         // By default number value
-        std::variant<NumberValue, BinOpValue> value;
+        std::variant<NumberValue, BinOpValue, UnOpValue> value;
 
         Node(enum NodeType t_type,
-             std::variant<NumberValue, BinOpValue> t_value);
+             std::variant<
+                 NumberValue,
+                 BinOpValue,
+                 UnOpValue>
+                 t_value);
 
         static std::string reprNodeType(enum NodeType nodeType);
     };

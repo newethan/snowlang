@@ -17,8 +17,7 @@ namespace snowlang::errorHandler
                 text.begin() + posStart,
                 text.begin() + posEnd,
                 [c](char charInString)
-                { return charInString == c; }
-            );
+                { return charInString == c; });
         }
 
         int posOfNthChar(
@@ -29,11 +28,11 @@ namespace snowlang::errorHandler
             int pos = -1;
             int count = 0;
 
-            while( count != n )
+            while (count != n)
             {
                 pos += 1;
                 pos = text.find(c, pos);
-                if ( pos == string::npos )
+                if (pos == string::npos)
                     return -1;
                 count++;
             }

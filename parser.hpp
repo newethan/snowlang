@@ -10,6 +10,7 @@ namespace snowlang::parser
         const std::vector<Token> &tokens;
         int pos = 0;
         void advance(int positions = 1) { pos += positions; }
+        Token current() { return tokens[pos]; }
     };
     void printAst(std::unique_ptr<Node> &ast,
                   int indent = 0);

@@ -13,6 +13,7 @@ namespace snowlang
     {
         return (const char *[]){
             "TT_NULL",
+            "TT_EOF",
             "TT_WHITESPACE",
             "TT_LBRACE",
             "TT_RBRACE",

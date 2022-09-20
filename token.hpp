@@ -7,6 +7,7 @@ namespace snowlang
     enum TokenType
     {
         TT_NULL,       // null token
+        TT_EOF,        // end of file
         TT_WHITESPACE, // whitespace
         TT_LBRACE,     // brackets
         TT_RBRACE,
@@ -33,7 +34,7 @@ namespace snowlang
         TT_INT
     };
 
-    const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap {
+    const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap{
         {std::regex("^\\s+"), TT_WHITESPACE}, // whitespace
         {std::regex("^\\{"), TT_LBRACE},      // brackets
         {std::regex("^\\}"), TT_RBRACE},
@@ -57,8 +58,7 @@ namespace snowlang
         {std::regex("^loop"), TT_LOOP},
         {std::regex("^\\$\\w+"), TT_VAR},
         {std::regex("^\\d+"), TT_INT},
-        {std::regex("^\\w+"), TT_IDEN}
-    };
+        {std::regex("^\\w+"), TT_IDEN}};
 
     class Token
     {

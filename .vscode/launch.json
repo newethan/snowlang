@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/debug",
-            "args": ["1+$a+2"],
+            "args": ["code.sno"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

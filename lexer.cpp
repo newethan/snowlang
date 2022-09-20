@@ -30,7 +30,7 @@ namespace snowlang::lexer
                     state.pos - 1);
             }
             throw errorHandler::SnowlangException(
-                state.pos, state.pos, "Invaild token.");
+                state.pos, state.pos, errorHandler::INVALID_TOKEN);
         }
     } // End of anonymous namespace
 
@@ -45,13 +45,15 @@ namespace snowlang::lexer
             {
                 nextToken = generateNextToken(state);
             }
-            catch (errorHandler::SnowlangException e){
+            catch (errorHandler::SnowlangException &e)
+            {
                 throw;
             }
             if (nextToken.type == TT_WHITESPACE)
                 continue;
             tokens.push_back(nextToken);
         }
+        tokens.push_back(Token(TT_EOF, "", state.pos, state.pos));
         return tokens;
     }
 }

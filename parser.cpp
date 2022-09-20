@@ -10,40 +10,94 @@ namespace snowlang::parser
 
     namespace // Implementation functions
     {
+        // Declarations
+        unique_ptr<Node> expression(ParseState &state);
+        unique_ptr<Node> term(ParseState &state);
+        unique_ptr<Node> factor(ParseState &state);
+
         inline unique_ptr<Node> parseBinOp(
             ParseState &state,
             unordered_set<TokenType> types,
             function<unique_ptr<Node>(ParseState &state)> func)
         {
             unique_ptr<Node> left;
-            try{ left = func(state); }
-            catch (errorHandler::SnowlangException e) { throw; }
+            try
+            {
+                left = func(state);
+            }
+            catch (errorHandler::SnowlangException &e)
+            {
+                throw;
+            }
 
             while (types.count(state.tokens[state.pos].type) > 0)
             {
                 auto operationToken = state.tokens[state.pos];
                 state.advance();
                 unique_ptr<Node> right;
-                try { right = func(state); }
-                catch (errorHandler::SnowlangException e) { throw; }
+                try
+                {
+                    right = func(state);
+                }
+                catch (errorHandler::SnowlangException &e)
+                {
+                    throw;
+                }
                 left = make_unique<Node>(
                     NT_BINOP,
                     BinOpValue(move(left), move(right), operationToken));
             }
             return left;
         }
+
         unique_ptr<Node> factor(ParseState &state)
         {
-            Token current = state.tokens[state.pos];
-            if (current.type == TT_INT || current.type == TT_VAR)
+            if (state.current().type == TT_PLUS ||
+                state.current().type == TT_MINUS)
+            {
+                auto operationToken = state.current();
+                state.advance();
+                auto node = factor(state);
+                return make_unique<Node>(
+                    NT_UNOP,
+                    UnOpValue(move(node), operationToken));
+            }
+            else if (state.current().type == TT_INT ||
+                     state.current().type == TT_VAR)
+            {
+                auto node = make_unique<Node>(
+                    NT_NUMBER,
+                    NumberValue(state.current()));
+                state.advance();
+                return node;
+            }
+            else if (state.current().type == TT_LPAREN)
             {
                 state.advance();
-                return make_unique<Node>(NT_NUMBER, NumberValue(current));
+                unique_ptr<Node> node;
+                try
+                {
+                    node = expression(state);
+                }
+                catch (errorHandler::SnowlangException &e)
+                {
+                    throw;
+                }
+                if (state.current().type == TT_RPAREN)
+                {
+                    state.advance();
+                    return node;
+                }
+                else
+                {
+                    throw errorHandler::SnowlangException(
+                        state.current(),
+                        errorHandler::EXPECTED_RPAREN);
+                }
             }
             throw errorHandler::SnowlangException(
-                state.tokens[state.pos].tokenStart,
-                state.tokens[state.pos].tokenEnd,
-                "Expected Number or variable.");
+                state.current(),
+                errorHandler::EXPECTED_FIRST_OF_FACTOR);
         }
 
         unique_ptr<Node> term(ParseState &state)
@@ -65,17 +119,21 @@ namespace snowlang::parser
         {
             res = expression(state);
         }
-        catch (errorHandler::SnowlangException e)
+        catch (errorHandler::SnowlangException &e)
         {
             throw;
         }
+        if (state.pos < state.tokens.size() - 1)
+            throw errorHandler::SnowlangException(
+                state.current(),
+                errorHandler::EXPECTED_EOI);
         return res;
     }
 
     void printAst(std::unique_ptr<Node> &ast, int indent)
     {
         for (int i = 0; i < indent; i++)
-            cout << "\t";
+            cout << "  ";
         cout << "type: " << Node::reprNodeType(ast->type) << "; ";
         if (ast->type == NT_NUMBER)
         {
@@ -90,6 +148,13 @@ namespace snowlang::parser
             cout << value.operationToken.repr() << endl;
             printAst(value.left, indent + 1);
             printAst(value.right, indent + 1);
+        }
+        else if (ast->type == NT_UNOP)
+        {
+            cout << "operation: ";
+            auto &value = std::get<UnOpValue>(ast->value);
+            cout << value.operationToken.repr() << endl;
+            printAst(value.node, indent + 1);
         }
     }
 }
