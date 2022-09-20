@@ -21,6 +21,8 @@ instruction
     : DEFINE type item SEMICOLON
     : CONNECT item item SEMICOLON
     : LOOP VAR IN range LBRACE block RBRACE
+    : IF LPAREN cond_expr RPAREN LBRACE block RBRACE
+        (ELSE LBRACE block RBRACE)
     ;
 item
     : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*
@@ -41,8 +43,27 @@ factor
     : LPAREN expr RPAREN
     ;
 range
-    : LPAREN INT COMMA INT RPAREN
+    : LPAREN expr COMMA expr RPAREN
     ;
+
+cond_expr
+    : cond_term (OR cond_term)*
+    ;
+
+cond_term
+    : cond_factor (AND cond_factor)*
+    ;
+
+cond_factor
+    : TRUE
+    : FALSE
+    : expr GT expr
+    : expr GE expr
+    : expr EQ expr
+    : expr LE expr
+    : expr LT expr
+    : NOT cond_factor
+    : LBRACK cond_expr RBRACK
 
 examples:
 ```

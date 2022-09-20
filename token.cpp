@@ -35,6 +35,16 @@ namespace snowlang
             "TT_DEFINE",
             "TT_CONNECT",
             "TT_LOOP",
+            "TT_OR",
+            "TT_AND",
+            "TT_NOT",
+            "TT_TRUE",
+            "TT_FALSE",
+            "TT_GT",
+            "TT_GE",
+            "TT_EQ",
+            "TT_LE",
+            "TT_LT",
             "TT_VAR",
             "TT_IDEN",
             "TT_INT"}[tokenType];
@@ -42,7 +52,7 @@ namespace snowlang
 
     string Token::repr()
     {
-        return ("Token('" + value + "' : " + reprTokenType(type) + ")");
+        return (reprTokenType(type) + ": '" + value + "'");
     }
 
 }

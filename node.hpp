@@ -12,17 +12,20 @@ namespace snowlang
     {
         NT_BINOP,
         NT_UNOP,
-        NT_NUMBER
+        NT_LEAF,
+        NT_RANGE,
+        NT_TYPE,
+        NT_ITEM
     };
 
     /////////////// value structs
 
-    struct NumberValue
+    struct LeafValue
     {
-        Token numberToken;
+        Token token;
 
-        NumberValue(Token t_numberToken)
-            : numberToken(t_numberToken) {}
+        LeafValue(Token t_token)
+            : token(t_token) {}
     };
     struct BinOpValue
     {
@@ -48,23 +51,62 @@ namespace snowlang
             : node(std::move(t_node)), operationToken(t_operationToken) {}
     };
 
+    struct RangeValue
+    {
+        std::unique_ptr<Node> from{nullptr};
+        std::unique_ptr<Node> to{nullptr};
+
+        RangeValue(std::unique_ptr<Node> t_from, std::unique_ptr<Node> t_to)
+            : from(std::move(t_from)), to(std::move(t_to)) {}
+    };
+
+    struct TypeValue
+    {
+        Token identifier;
+        int arraySize{-1}; // If value is -1, type is not array.
+
+        TypeValue(Token t_identifier, int t_arraySize = -1)
+            : identifier(t_identifier), arraySize(t_arraySize) {}
+    };
+
+    struct ItemValue
+    {
+        Token identifier;
+
+        // If value is nullptr, identifier is not indexed
+        std::unique_ptr<Node> index{nullptr};
+        std::unique_ptr<Node> next{nullptr};
+
+        ItemValue(Token t_identifier,
+                  std::unique_ptr<Node> t_index,
+                  std::unique_ptr<Node> t_next)
+            : identifier(t_identifier),
+              index(std::move(t_index)),
+              next(std::move(t_next)) {}
+    };
+
     ///////////////
+    using NodeValueType =
+        std::variant<
+            LeafValue,
+            BinOpValue,
+            UnOpValue,
+            RangeValue,
+            TypeValue,
+            ItemValue>;
 
     class Node
     {
     public:
         enum NodeType type;
 
-        // By default number value
-        std::variant<NumberValue, BinOpValue, UnOpValue> value;
+        // By default LeafValue
+        NodeValueType value;
 
         Node(enum NodeType t_type,
-             std::variant<
-                 NumberValue,
-                 BinOpValue,
-                 UnOpValue>
-                 t_value);
+             NodeValueType t_value)
+            : type(t_type), value(move(t_value)) {}
 
-        static std::string reprNodeType(enum NodeType nodeType);
+        static std::string reprNodeType(NodeType nodeType);
     };
 }

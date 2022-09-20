@@ -29,8 +29,8 @@ namespace snowlang::lexer
                     tokenStart,
                     state.pos - 1);
             }
-            throw errorHandler::SnowlangException(
-                state.pos, state.pos, errorHandler::INVALID_TOKEN);
+            throw err::SnowlangException(
+                state.pos, state.pos, err::INVALID_TOKEN);
         }
     } // End of anonymous namespace
 
@@ -45,7 +45,7 @@ namespace snowlang::lexer
             {
                 nextToken = generateNextToken(state);
             }
-            catch (errorHandler::SnowlangException &e)
+            catch (err::SnowlangException &e)
             {
                 throw;
             }

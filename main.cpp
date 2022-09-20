@@ -64,16 +64,16 @@ int main(int argc, char *argv[])
     }
     stringstream buf;
     buf << file.rdbuf();
-    string text =  buf.str();
+    string text = buf.str();
 
     vector<Token> tokens;
     try
     {
         tokens = lexer::lex(text);
     }
-    catch(errorHandler::SnowlangException e)
+    catch (err::SnowlangException e)
     {
-        errorHandler::fatalErrorAbort(
+        err::fatalErrorAbort(
             text,
             filename,
             e.posStart,
@@ -87,15 +87,14 @@ int main(int argc, char *argv[])
     {
         ast = parser::parse(tokens);
     }
-    catch (errorHandler::SnowlangException e)
+    catch (err::SnowlangException e)
     {
-        errorHandler::fatalErrorAbort(
-                    text,
-                    filename,
-                    e.posStart,
-                    e.posEnd,
-                    e.message);
+        err::fatalErrorAbort(
+            text,
+            filename,
+            e.posStart,
+            e.posEnd,
+            e.message);
     }
     parser::printAst(ast);
-
 }

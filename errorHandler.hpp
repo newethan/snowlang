@@ -3,16 +3,25 @@
 #include "snowlang.hpp"
 #include "token.hpp"
 
-namespace snowlang::errorHandler
+namespace snowlang::err
 {
     // Error messages
+    const std::string NOERR = "";
     const std::string INVALID_TOKEN = "Invalid token.";
-    const std::string EXPECTED_RPAREN = "Excpected ')'.";
+    const std::string EXPECTED_RBRACK = "Expected ']'.";
+    const std::string EXPECTED_LPAREN = "Expected '('.";
+    const std::string EXPECTED_RPAREN = "Expected ')'.";
+    const std::string EXPECTED_COMMA = "Expected ','.";
     const std::string EXPECTED_FIRST_OF_FACTOR =
         "Expected number, variable, '+', '-' or '('.";
+    const std::string EXPECTED_COMPARISON =
+        "Expected '>', '>=', '==', '<=' or '<'.";
     const std::string EXPECTED_EOI =
         "Unexpected token, expected end of input here.";
+    const std::string EXPECTED_INT = "Expected number.";
+    const std::string EXPECTED_IDEN = "Expected identifier.";
 
+    // Custom exception class
     class SnowlangException : std::exception
     {
     public:
@@ -42,5 +51,4 @@ namespace snowlang::errorHandler
         int posStart,
         int posEnd,
         const std::string &message);
-
 }

@@ -3,7 +3,7 @@
 
 using namespace std;
 
-namespace snowlang::errorHandler
+namespace snowlang::err
 {
     namespace
     {

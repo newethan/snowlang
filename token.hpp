@@ -29,6 +29,16 @@ namespace snowlang
         TT_DEFINE,
         TT_CONNECT,
         TT_LOOP,
+        TT_OR,
+        TT_AND,
+        TT_NOT,
+        TT_TRUE,
+        TT_FALSE,
+        TT_GT,
+        TT_GE,
+        TT_EQ,
+        TT_LE,
+        TT_LT,
         TT_VAR, // tokens with variable value
         TT_IDEN,
         TT_INT
@@ -49,6 +59,14 @@ namespace snowlang
         {std::regex("^-"), TT_MINUS},
         {std::regex("^\\*"), TT_MULT},
         {std::regex("^/"), TT_DIV},
+        {std::regex("^>="), TT_GE},
+        {std::regex("^>"), TT_GT},
+        {std::regex("^=="), TT_EQ},
+        {std::regex("^<="), TT_LE},
+        {std::regex("^<"), TT_LT},
+        {std::regex("^\\|"), TT_OR},
+        {std::regex("^&"), TT_AND},
+        {std::regex("^!"), TT_NOT},
         {std::regex("^mod"), TT_MOD}, // keywords
         {std::regex("^wire"), TT_WIRE},
         {std::regex("^input"), TT_INPUT},
@@ -56,7 +74,9 @@ namespace snowlang
         {std::regex("^@"), TT_DEFINE},
         {std::regex("^="), TT_CONNECT},
         {std::regex("^loop"), TT_LOOP},
-        {std::regex("^\\$\\w+"), TT_VAR},
+        {std::regex("^true"), TT_TRUE},
+        {std::regex("^false"), TT_FALSE},
+        {std::regex("^\\$\\w+"), TT_VAR}, // var values
         {std::regex("^\\d+"), TT_INT},
         {std::regex("^\\w+"), TT_IDEN}};
 
