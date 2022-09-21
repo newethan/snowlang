@@ -1,0 +1,8 @@
+@ [8]onebitreg registers;
+loop $n in (1,8) {
+    if (!is $n == 7 | is $n == 6){
+    = data[$n] registers[$n].data;
+    = set registers.set[$n];
+    = registers[$n].value value[$n];
+    }
+}

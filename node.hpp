@@ -15,7 +15,12 @@ namespace snowlang
         NT_LEAF,
         NT_RANGE,
         NT_TYPE,
-        NT_ITEM
+        NT_ITEM,
+        NT_DEF,
+        NT_CONN,
+        NT_LOOP,
+        NT_IF,
+        NT_BLOCK
     };
 
     /////////////// value structs
@@ -63,9 +68,9 @@ namespace snowlang
     struct TypeValue
     {
         Token identifier;
-        int arraySize{-1}; // If value is -1, type is not array.
+        Token arraySize; // If token is TT_NULL, type is not array.
 
-        TypeValue(Token t_identifier, int t_arraySize = -1)
+        TypeValue(Token t_identifier, Token t_arraySize = Token())
             : identifier(t_identifier), arraySize(t_arraySize) {}
     };
 
@@ -85,6 +90,62 @@ namespace snowlang
               next(std::move(t_next)) {}
     };
 
+    struct DefineValue
+    {
+        std::unique_ptr<Node> type{nullptr};
+        Token identifier;
+
+        DefineValue(std::unique_ptr<Node> t_type, Token t_identifier)
+            : type(std::move(t_type)), identifier(t_identifier) {}
+    };
+
+    struct ConnectValue
+    {
+        std::unique_ptr<Node> left{nullptr};
+        std::unique_ptr<Node> right{nullptr};
+
+        ConnectValue(std::unique_ptr<Node> t_left,
+                     std::unique_ptr<Node> t_right)
+            : left(std::move(t_left)), right(std::move(t_right)) {}
+    };
+
+    struct LoopValue
+    {
+        Token var;
+        std::unique_ptr<Node> range{nullptr};
+        std::unique_ptr<Node> block{nullptr};
+
+        LoopValue(
+            Token t_var,
+            std::unique_ptr<Node> t_range,
+            std::unique_ptr<Node> t_block)
+            : var(t_var),
+              range(std::move(t_range)),
+              block(std::move(t_block)) {}
+    };
+
+    struct IfValue
+    {
+        std::unique_ptr<Node> cond{nullptr};
+        std::unique_ptr<Node> ifBlock{nullptr};
+        std::unique_ptr<Node> elseBlock{nullptr};
+
+        IfValue(std::unique_ptr<Node> t_cond,
+                std::unique_ptr<Node> t_ifBlock,
+                std::unique_ptr<Node> t_elseBlock)
+            : cond(std::move(t_cond)),
+              ifBlock(std::move(t_ifBlock)),
+              elseBlock(std::move(t_elseBlock)) {}
+    };
+
+    struct BlockValue
+    {
+        std::vector<std::unique_ptr<Node>> instructions;
+
+        BlockValue(std::vector<std::unique_ptr<Node>> t_instructions)
+            : instructions(move(t_instructions)) {}
+    };
+
     ///////////////
     using NodeValueType =
         std::variant<
@@ -93,7 +154,12 @@ namespace snowlang
             UnOpValue,
             RangeValue,
             TypeValue,
-            ItemValue>;
+            ItemValue,
+            DefineValue,
+            ConnectValue,
+            LoopValue,
+            IfValue,
+            BlockValue>;
 
     class Node
     {
@@ -109,4 +175,6 @@ namespace snowlang
 
         static std::string reprNodeType(NodeType nodeType);
     };
+    void printAst(const std::unique_ptr<Node> &ast,
+                  int indent = 0);
 }

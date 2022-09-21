@@ -11,46 +11,26 @@ namespace snowlang::parser
         const std::vector<Token> &tokens;
         int pos = 0;
 
-        void advance(int positions = 1) { pos += positions; }
-        Token current() { return tokens[pos]; }
+        ParseState(const std::vector<Token> &t_tokens)
+            : tokens(t_tokens) {}
 
-        inline bool typeIs(
+        inline void advance(int positions = 1) { pos += positions; }
+        inline Token current() { return tokens[pos]; }
+
+        inline bool accept(
             TokenType type,
-            bool eat = false,
-            const std::string &errorMessage = err::NOERR)
+            const std::string &errorMessage = err::NOERR);
+        inline bool accept(
+            std::unordered_set<TokenType> types,
+            const std::string &errorMessage = err::NOERR);
+
+        inline Token accepted()
         {
-            if (current().type == type)
-            {
-                if (eat)
-                    advance();
-                return true;
-            }
-            if (errorMessage == err::NOERR)
-                return false;
-            throw err::SnowlangException(
-                current(),
-                errorMessage);
+            return m_acceptedToken;
         }
 
-        inline bool typeIs(
-            std::unordered_set<TokenType> types,
-            bool eat = false,
-            const std::string &errorMessage = err::NOERR)
-        {
-            if (types.count(current().type) > 0)
-            {
-                if (eat)
-                    advance();
-                return true;
-            }
-            if (errorMessage == err::NOERR)
-                return false;
-            throw err::SnowlangException(
-                current(),
-                errorMessage);
-        }
+    private:
+        Token m_acceptedToken;
     };
-    void printAst(std::unique_ptr<Node> &ast,
-                  int indent = 0);
     std::unique_ptr<Node> parse(const std::vector<Token> &tokens);
 }
