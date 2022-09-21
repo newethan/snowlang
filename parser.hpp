@@ -24,6 +24,15 @@ namespace snowlang::parser
             std::unordered_set<TokenType> types,
             const std::string &errorMessage = err::NOERR);
 
+        inline bool typeIs(TokenType type)
+        {
+            return current().type == type;
+        }
+        inline bool typeIs(std::unordered_set<TokenType> types)
+        {
+            return types.count(current().type) > 0;
+        }
+
         inline Token accepted()
         {
             return m_acceptedToken;

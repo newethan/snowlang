@@ -1,18 +1,12 @@
 script
-    : (module|wire)* main
-    ;
-module
-    : MOD LBRACE INPUT LBRACE wire_content RBRACE OUTPUT LBRACE wire_content RBRACE block RBRACE
-    ;
-wire
-    : WIRE LBRACE wire_content RBRACE
-    ;
-main
-    : MAIN LBRACE block RBRACE
+    : (MOD IDEN LBRACE
+        INPUT LBRACE wire_content RBRACE
+        OUTPUT LBRACE wire_content RBRACE
+        block RBRACE
+        | WIRE IDEN LBRACE wire_content RBRACE)*
     ;
 wire_content
-    : ( type IDEN SEMICOLON wire_content |
-      LBRACK INT RBRACK IDEN IDEN SEMICOLON wire_content ) *
+    : (type IDEN SEMICOLON)*
     ;
 block
     : (instruction)*
@@ -22,6 +16,7 @@ instruction
     : CONNECT item item SEMICOLON
     : LOOP VAR IN range LBRACE block RBRACE
     : IF cond_expr LBRACE block RBRACE
+        (ELIF cond_expr LBRACE block RBRACE)*
         (ELSE LBRACE block RBRACE)?
     ;
 item
@@ -45,15 +40,12 @@ factor
 range
     : LPAREN expr COMMA expr RPAREN
     ;
-
 cond_expr
     : cond_term (OR cond_term)*
     ;
-
 cond_term
     : cond_factor (AND cond_factor)*
     ;
-
 cond_factor
     : TRUE
     : FALSE
@@ -105,8 +97,8 @@ mod 8bitreg {
     @ [8]1bitreg registers;
     loop $n in (1,8) {
         = data[$n] registers[$n].data;
-        = set registers.[$n]set;
-        = registers[$n].value value[$n]
+        = set registers.set[$n];
+        = registers[$n].value value[$n];
     } 
 }
 

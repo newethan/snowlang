@@ -234,20 +234,25 @@ namespace snowlang::parser
             }
             else if (state.accept(TT_IF))
             {
-                auto cond = condExpression(state);
-                state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                auto ifBlock = block(state);
-                state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                vector<unique_ptr<Node>> conds;
+                vector<unique_ptr<Node>> ifBlocks;
+                do
+                {
+                    conds.push_back(condExpression(state));
+                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
+                    ifBlocks.push_back(block(state));
+                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                } while (state.accept(TT_ELIF));
                 unique_ptr<Node> elseBlock;
                 if (state.accept(TT_ELSE))
                 {
                     state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                    elseBlock = block(state);
+                    ifBlocks.push_back(block(state));
                     state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
                 }
                 return make_unique<Node>(
                     NT_IF,
-                    IfValue(move(cond), move(ifBlock), move(elseBlock)));
+                    IfValue(move(conds), move(ifBlocks)));
             }
             throw err::SnowlangException(
                 state.current(),
@@ -257,10 +262,7 @@ namespace snowlang::parser
         unique_ptr<Node> block(ParseState &state)
         {
             vector<unique_ptr<Node>> instructions;
-            while (state.current().type == TT_DEFINE ||
-                   state.current().type == TT_CONNECT ||
-                   state.current().type == TT_LOOP ||
-                   state.current().type == TT_IF)
+            while (state.typeIs({TT_DEFINE, TT_CONNECT, TT_LOOP, TT_IF}))
             {
                 instructions.push_back(instruction(state));
             }
@@ -269,12 +271,69 @@ namespace snowlang::parser
                 BlockValue(move(instructions)));
         }
 
+        unique_ptr<Node> wireContent(ParseState &state)
+        {
+            vector<unique_ptr<Node>> types;
+            vector<Token> identifiers;
+            while (state.typeIs({TT_IDEN, TT_LBRACK}))
+            {
+                types.push_back(type(state));
+                state.accept(TT_IDEN, err::EXPECTED_IDEN);
+                identifiers.push_back(state.accepted());
+                state.accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            }
+            return make_unique<Node>(
+                NT_WIRE_CONTENT,
+                WireContentValue(move(types), identifiers));
+        }
+
+        unique_ptr<Node> script(ParseState &state)
+        {
+            vector<unique_ptr<Node>> fields;
+            while (state.typeIs({TT_MOD, TT_WIRE}))
+            {
+                if (state.accept(TT_MOD))
+                {
+                    state.accept(TT_IDEN, err::EXPECTED_IDEN);
+                    auto identifier = state.accepted();
+                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
+                    state.accept(TT_INPUT, err::EXPECTED_INPUT);
+                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
+                    auto input = wireContent(state);
+                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                    state.accept(TT_OUTPUT, err::EXPECTED_OUTPUT);
+                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
+                    auto output = wireContent(state);
+                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                    auto blockNode = block(state);
+                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+
+                    fields.push_back(make_unique<Node>(
+                        NT_MOD, ModuleValue(
+                                    identifier, move(input),
+                                    move(output), move(blockNode))));
+                }
+                else if (state.accept(TT_WIRE))
+                {
+                    state.accept(TT_IDEN, err::EXPECTED_IDEN);
+                    auto identifier = state.accepted();
+                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
+                    auto content = wireContent(state);
+                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+
+                    fields.push_back(make_unique<Node>(
+                        NT_WIRE, WireValue(identifier, move(content))));
+                }
+            }
+            return make_unique<Node>(NT_SCRIPT, ScriptValue(move(fields)));
+        }
+
     } // End of anonymous namespace
 
     unique_ptr<Node> parse(const vector<Token> &tokens)
     {
         ParseState state(tokens);
-        auto res = block(state);
+        auto res = script(state);
         if (state.pos < state.tokens.size() - 1)
             throw err::SnowlangException(state.current(), err::EXPECTED_EOI);
         return res;
