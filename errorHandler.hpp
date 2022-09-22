@@ -31,9 +31,8 @@ namespace snowlang::err
         "Expected variable.";
     const std::string EXPECTED_IDEN = "Expected identifier.";
     const std::string EXPECTED_IN = "Expected 'in'.";
-    const std::string EXPECTED_INPUT = "Expected 'input'.";
-    const std::string EXPECTED_OUTPUT = "Expected 'output'.";
-    const std::string EXPECTED_CONSTRUCT = "Expected 'construct'.";
+    const std::string EXPECTED_PUBLIC = "Expected 'public:'.";
+    const std::string EXPECTED_PRIVATE = "Expected 'private:'.";
 
     // Custom exception class
     class SnowlangException : std::exception

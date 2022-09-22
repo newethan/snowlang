@@ -177,6 +177,8 @@ namespace snowlang::parser
 
         unique_ptr<Node> type(ParseState &state)
         {
+            state.accept(TT_IDEN, err::EXPECTED_IDEN);
+            Token identifier = state.accepted();
             Token arraySize;
             if (state.accept(TT_LBRACK)) // Optional - type is array
             {
@@ -184,9 +186,8 @@ namespace snowlang::parser
                 arraySize = state.accepted();
                 state.accept(TT_RBRACK, err::EXPECTED_RBRACK);
             }
-            state.accept(TT_IDEN, err::EXPECTED_IDEN);
             return make_unique<Node>(
-                NT_TYPE, TypeValue(state.accepted(), arraySize));
+                NT_TYPE, TypeValue(identifier, arraySize));
         }
 
         unique_ptr<Node> item(ParseState &state)
@@ -209,26 +210,26 @@ namespace snowlang::parser
 
         unique_ptr<Node> instruction(ParseState &state)
         {
-            if (state.accept(TT_DEFINE))
+            if (state.accept(TT_LET))
             {
                 auto typeNode = type(state);
                 state.accept(TT_IDEN, err::EXPECTED_IDEN);
                 auto identidier = state.accepted();
                 state.accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
                 return make_unique<Node>(
-                    NT_DEF,
-                    DefineValue(move(typeNode), identidier));
+                    NT_LET,
+                    LetValue(move(typeNode), identidier));
             }
-            else if (state.accept(TT_CONNECT))
+            else if (state.accept(TT_CON))
             {
                 auto left = item(state);
                 auto right = item(state);
                 state.accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
                 return make_unique<Node>(
-                    NT_CONN,
-                    ConnectValue(move(left), move(right)));
+                    NT_CON,
+                    ConValue(move(left), move(right)));
             }
-            else if (state.accept(TT_LOOP))
+            else if (state.accept(TT_FOR))
             {
                 state.accept(TT_VAR, err::EXPECTED_VAR);
                 auto var = state.accepted();
@@ -238,8 +239,8 @@ namespace snowlang::parser
                 auto blockNode = block(state);
                 state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
                 return make_unique<Node>(
-                    NT_LOOP,
-                    LoopValue(var, move(rangeNode), move(blockNode)));
+                    NT_FOR,
+                    ForValue(var, move(rangeNode), move(blockNode)));
             }
             else if (state.accept(TT_IF))
             {
@@ -271,7 +272,7 @@ namespace snowlang::parser
         unique_ptr<Node> block(ParseState &state)
         {
             vector<unique_ptr<Node>> instructions;
-            while (state.typeIs({TT_DEFINE, TT_CONNECT, TT_LOOP, TT_IF}))
+            while (state.typeIs({TT_LET, TT_CON, TT_FOR, TT_IF}))
             {
                 instructions.push_back(instruction(state));
             }
@@ -280,11 +281,11 @@ namespace snowlang::parser
                 BlockValue(move(instructions)));
         }
 
-        unique_ptr<Node> wireContent(ParseState &state)
+        unique_ptr<Node> declarations(ParseState &state)
         {
             vector<unique_ptr<Node>> types;
             vector<Token> identifiers;
-            while (state.typeIs({TT_IDEN, TT_LBRACK}))
+            while (state.accept(TT_LET))
             {
                 types.push_back(type(state));
                 state.accept(TT_IDEN, err::EXPECTED_IDEN);
@@ -292,46 +293,29 @@ namespace snowlang::parser
                 state.accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
             }
             return make_unique<Node>(
-                NT_WIRE_CONTENT,
-                WireContentValue(move(types), identifiers));
+                NT_DECLARATIONS,
+                DeclarationsValue(move(types), identifiers));
         }
 
         unique_ptr<Node> script(ParseState &state)
         {
-            vector<unique_ptr<Node>> fields;
-            while (state.typeIs({TT_MOD, TT_WIRE}))
+            vector<unique_ptr<Node>> modules;
+            while (state.accept(TT_MOD))
             {
-                if (state.accept(TT_MOD))
-                {
-                    state.accept(TT_IDEN, err::EXPECTED_IDEN);
-                    auto identifier = state.accepted();
-                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                    state.accept(TT_INPUT, err::EXPECTED_INPUT);
-                    auto input = wireContent(state);
-                    state.accept(TT_OUTPUT, err::EXPECTED_OUTPUT);
-                    auto output = wireContent(state);
-                    state.accept(TT_CONSTRUCT, err::EXPECTED_CONSTRUCT);
-                    auto blockNode = block(state);
-                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                state.accept(TT_IDEN, err::EXPECTED_IDEN);
+                auto identifier = state.accepted();
+                state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
+                state.accept(TT_PUBLIC, err::EXPECTED_PUBLIC);
+                auto decs = declarations(state);
+                state.accept(TT_PRIVATE, err::EXPECTED_PRIVATE);
+                auto blockNode = block(state);
+                state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
 
-                    fields.push_back(make_unique<Node>(
-                        NT_MOD, ModuleValue(
-                                    identifier, move(input),
-                                    move(output), move(blockNode))));
-                }
-                else if (state.accept(TT_WIRE))
-                {
-                    state.accept(TT_IDEN, err::EXPECTED_IDEN);
-                    auto identifier = state.accepted();
-                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                    auto content = wireContent(state);
-                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
-
-                    fields.push_back(make_unique<Node>(
-                        NT_WIRE, WireValue(identifier, move(content))));
-                }
+                modules.push_back(make_unique<Node>(
+                    NT_MOD, ModuleValue(
+                                identifier, move(decs), move(blockNode))));
             }
-            return make_unique<Node>(NT_SCRIPT, ScriptValue(move(fields)));
+            return make_unique<Node>(NT_SCRIPT, ScriptValue(move(modules)));
         }
 
     } // End of anonymous namespace

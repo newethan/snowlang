@@ -17,15 +17,14 @@ namespace snowlang
         NT_RANGE,
         NT_TYPE,
         NT_ITEM,
-        NT_DEF,
-        NT_CONN,
-        NT_LOOP,
+        NT_LET,
+        NT_CON,
+        NT_FOR,
         NT_IF,
         NT_BLOCK,
         NT_SCRIPT,
         NT_MOD,
-        NT_WIRE,
-        NT_WIRE_CONTENT
+        NT_DECLARATIONS
     };
 
     /////////////// value structs
@@ -95,32 +94,32 @@ namespace snowlang
               next(std::move(t_next)) {}
     };
 
-    struct DefineValue
+    struct LetValue
     {
         std::unique_ptr<Node> type{nullptr};
         Token identifier;
 
-        DefineValue(std::unique_ptr<Node> t_type, Token t_identifier)
+        LetValue(std::unique_ptr<Node> t_type, Token t_identifier)
             : type(std::move(t_type)), identifier(t_identifier) {}
     };
 
-    struct ConnectValue
+    struct ConValue
     {
         std::unique_ptr<Node> left{nullptr};
         std::unique_ptr<Node> right{nullptr};
 
-        ConnectValue(std::unique_ptr<Node> t_left,
-                     std::unique_ptr<Node> t_right)
+        ConValue(std::unique_ptr<Node> t_left,
+                 std::unique_ptr<Node> t_right)
             : left(std::move(t_left)), right(std::move(t_right)) {}
     };
 
-    struct LoopValue
+    struct ForValue
     {
         Token var;
         std::unique_ptr<Node> range{nullptr};
         std::unique_ptr<Node> block{nullptr};
 
-        LoopValue(
+        ForValue(
             Token t_var,
             std::unique_ptr<Node> t_range,
             std::unique_ptr<Node> t_block)
@@ -151,38 +150,24 @@ namespace snowlang
     struct ModuleValue
     {
         Token identifier;
-        std::unique_ptr<Node> input;
-        std::unique_ptr<Node> output;
+        std::unique_ptr<Node> declarations;
         std::unique_ptr<Node> block;
 
         ModuleValue(
             Token t_identifier,
-            std::unique_ptr<Node> t_input,
-            std::unique_ptr<Node> t_output,
+            std::unique_ptr<Node> t_declarations,
             std::unique_ptr<Node> t_block)
             : identifier(t_identifier),
-              input(move(t_input)),
-              output(move(t_output)),
+              declarations(move(t_declarations)),
               block(move(t_block)) {}
     };
 
-    struct WireValue
-    {
-        Token identifier;
-        std::unique_ptr<Node> content;
-
-        WireValue(
-            Token t_identifier,
-            std::unique_ptr<Node> t_content)
-            : identifier(t_identifier), content(move(t_content)) {}
-    };
-
-    struct WireContentValue
+    struct DeclarationsValue
     {
         std::vector<std::unique_ptr<Node>> types;
         std::vector<Token> identifiers;
 
-        WireContentValue(
+        DeclarationsValue(
             std::vector<std::unique_ptr<Node>> t_types,
             std::vector<Token> t_identifiers)
             : types(move(t_types)), identifiers(t_identifiers) {}
@@ -190,10 +175,10 @@ namespace snowlang
 
     struct ScriptValue
     {
-        std::vector<std::unique_ptr<Node>> fields;
+        std::vector<std::unique_ptr<Node>> modules;
 
-        ScriptValue(std::vector<std::unique_ptr<Node>> t_fields)
-            : fields(move(t_fields)) {}
+        ScriptValue(std::vector<std::unique_ptr<Node>> t_modules)
+            : modules(move(t_modules)) {}
     };
 
     ///////////////
@@ -205,14 +190,13 @@ namespace snowlang
             RangeValue,
             TypeValue,
             ItemValue,
-            DefineValue,
-            ConnectValue,
-            LoopValue,
+            LetValue,
+            ConValue,
+            ForValue,
             IfValue,
             BlockValue,
             ModuleValue,
-            WireValue,
-            WireContentValue,
+            DeclarationsValue,
             ScriptValue>;
 
     class Node

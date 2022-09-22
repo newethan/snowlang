@@ -13,15 +13,14 @@ namespace snowlang
             "NT_RANGE",
             "NT_TYPE",
             "NT_ITEM",
-            "NT_DEF",
-            "NT_CONN",
-            "NT_LOOP",
+            "NT_LET",
+            "NT_CON",
+            "NT_FOR",
             "NT_IF",
             "NT_BLOCK",
             "NT_SCRIPT",
             "NT_MOD",
-            "NT_WIRE",
-            "NT_WIRE_CONTENT"}[nodeType];
+            "NT_DECLARATIONS"}[nodeType];
     }
 
     void printAst(const std::unique_ptr<Node> &ast, int indent)
@@ -72,23 +71,23 @@ namespace snowlang
             if (value.next)
                 printAst(value.next, indent + 1);
         }
-        else if (ast->type == NT_DEF)
+        else if (ast->type == NT_LET)
         {
-            auto &value = std::get<DefineValue>(ast->value);
+            auto &value = std::get<LetValue>(ast->value);
             cout << "iden: " << value.identifier.repr() << ", ";
             cout << "type: " << endl;
             printAst(value.type, indent + 1);
         }
-        else if (ast->type == NT_CONN)
+        else if (ast->type == NT_CON)
         {
-            auto &value = std::get<ConnectValue>(ast->value);
+            auto &value = std::get<ConValue>(ast->value);
             cout << endl;
             printAst(value.left, indent + 1);
             printAst(value.right, indent + 1);
         }
-        else if (ast->type == NT_LOOP)
+        else if (ast->type == NT_FOR)
         {
-            auto &value = std::get<LoopValue>(ast->value);
+            auto &value = std::get<ForValue>(ast->value);
             cout << "var: " << value.var.repr() << endl;
             printAst(value.range, indent + 1);
             printAst(value.block, indent + 1);
@@ -120,28 +119,21 @@ namespace snowlang
         {
             auto &value = std::get<ScriptValue>(ast->value);
             cout << endl;
-            for (const auto &field : value.fields)
+            for (const auto &mod : value.modules)
             {
-                printAst(field, indent + 1);
+                printAst(mod, indent + 1);
             }
         }
         else if (ast->type == NT_MOD)
         {
             auto &value = std::get<ModuleValue>(ast->value);
             cout << "iden: " << value.identifier.repr() << endl;
-            printAst(value.input, indent + 1);
-            printAst(value.output, indent + 1);
+            printAst(value.declarations, indent + 1);
             printAst(value.block, indent + 1);
         }
-        else if (ast->type == NT_WIRE)
+        else if (ast->type == NT_DECLARATIONS)
         {
-            auto &value = std::get<WireValue>(ast->value);
-            cout << "iden: " << value.identifier.repr() << endl;
-            printAst(value.content, indent + 1);
-        }
-        else if (ast->type == NT_WIRE_CONTENT)
-        {
-            auto &value = std::get<WireContentValue>(ast->value);
+            auto &value = std::get<DeclarationsValue>(ast->value);
             cout << endl;
             for (int i = 0; i < value.types.size(); i++)
             {

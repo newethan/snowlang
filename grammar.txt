@@ -9,14 +9,10 @@ arithmetic operator precedence:
     `+` (PLUS), `-` (MINUS)  [both binary]
 
 script
-    : (MOD IDEN LBRACE
-        INPUT wire_content
-        OUTPUT wire_content
-        CONSTRUCT block RBRACE
-        | WIRE IDEN LBRACE wire_content RBRACE)*
+    : (MOD IDEN LBRACE PUBLIC declarations PRIVATE block RBRACE)*
     ;
-wire_content
-    : (type IDEN SEMICOLON)*
+declarations
+    : (DEFINE type IDEN SEMICOLON)*
     ;
 block
     : (instruction)*
@@ -34,7 +30,7 @@ item
     ;
 type
     : IDEN
-    : LBRACK INT RBRACK IDEN
+    : IDEN LBRACK INT RBRACK 
     ;
 expr
     : term ((PLUS|MINUS) term)*
