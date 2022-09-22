@@ -1,7 +1,6 @@
-#include "snowlang.hpp"
-#include "node.hpp"
+#include <iostream>
+#include <unordered_set>
 #include "parser.hpp"
-#include "errorHandler.hpp"
 
 using namespace std;
 
@@ -47,6 +46,7 @@ namespace snowlang::parser
         unique_ptr<Node> expression(ParseState &state);
         unique_ptr<Node> term(ParseState &state);
         unique_ptr<Node> factor(ParseState &state);
+        unique_ptr<Node> atom(ParseState &state);
         unique_ptr<Node> condExpression(ParseState &state);
         unique_ptr<Node> condTerm(ParseState &state);
         unique_ptr<Node> condFactor(ParseState &state);
@@ -59,14 +59,18 @@ namespace snowlang::parser
         inline unique_ptr<Node> parseBinOp(
             ParseState &state,
             unordered_set<TokenType> types,
-            function<unique_ptr<Node>(ParseState &state)> func)
+            function<unique_ptr<Node>(ParseState &state)> funcLeft,
+            function<unique_ptr<Node>(ParseState &state)> funcRight = nullptr)
         {
-            auto left = func(state);
+            if (!funcRight)
+                funcRight = funcLeft;
+
+            auto left = funcLeft(state);
 
             while (state.accept(types))
             {
                 auto operationToken = state.accepted();
-                auto right = func(state);
+                auto right = funcRight(state);
                 left = make_unique<Node>(
                     NT_BINOP,
                     BinOpValue(move(left), move(right), operationToken));
@@ -84,13 +88,18 @@ namespace snowlang::parser
                     NT_UNOP,
                     UnOpValue(move(node), operationToken));
             }
-            else if (state.accept({TT_INT, TT_VAR}))
+            return parseBinOp(state, {TT_POW}, atom, factor);
+        }
+
+        unique_ptr<Node> atom(ParseState &state)
+        {
+            if (state.accept({TT_INT, TT_VAR}))
             {
                 return make_unique<Node>(
                     NT_LEAF,
                     LeafValue(state.accepted()));
             }
-            state.accept(TT_LPAREN, err::EXPECTED_FIRST_OF_FACTOR);
+            state.accept(TT_LPAREN, err::EXPECTED_FIRST_OF_ATOM);
             auto node = expression(state);
             state.accept(TT_RPAREN, err::EXPECTED_RPAREN);
             return node;
@@ -98,7 +107,7 @@ namespace snowlang::parser
 
         unique_ptr<Node> term(ParseState &state)
         {
-            return parseBinOp(state, {TT_MULT, TT_DIV}, factor);
+            return parseBinOp(state, {TT_MULT, TT_DIV, TT_REM}, factor);
         }
 
         unique_ptr<Node> expression(ParseState &state)
@@ -298,13 +307,10 @@ namespace snowlang::parser
                     auto identifier = state.accepted();
                     state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
                     state.accept(TT_INPUT, err::EXPECTED_INPUT);
-                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
                     auto input = wireContent(state);
-                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
                     state.accept(TT_OUTPUT, err::EXPECTED_OUTPUT);
-                    state.accept(TT_LBRACE, err::EXPECTED_LBRACE);
                     auto output = wireContent(state);
-                    state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                    state.accept(TT_CONSTRUCT, err::EXPECTED_CONSTRUCT);
                     auto blockNode = block(state);
                     state.accept(TT_RBRACE, err::EXPECTED_RBRACE);
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "snowlang.hpp"
+#include <unordered_set>
 #include "node.hpp"
 #include "errorHandler.hpp"
 

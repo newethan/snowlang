@@ -1,6 +1,7 @@
 #pragma once
 
-#include "snowlang.hpp"
+#include <iostream>
+#include <regex>
 
 namespace snowlang
 {
@@ -9,6 +10,7 @@ namespace snowlang
         TT_NULL,       // null token
         TT_EOF,        // end of file
         TT_WHITESPACE, // whitespace
+        TT_COMMENT,    // comment
         TT_LBRACE,     // brackets
         TT_RBRACE,
         TT_LBRACK,
@@ -20,12 +22,15 @@ namespace snowlang
         TT_PERIOD,
         TT_PLUS,
         TT_MINUS,
+        TT_POW,
         TT_MULT,
         TT_DIV,
+        TT_REM,
         TT_MOD, // keywords
         TT_WIRE,
         TT_INPUT,
         TT_OUTPUT,
+        TT_CONSTRUCT,
         TT_DEFINE,
         TT_CONNECT,
         TT_IF,
@@ -50,8 +55,9 @@ namespace snowlang
     };
 
     const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap{
-        {std::regex("^\\s+"), TT_WHITESPACE}, // whitespace
-        {std::regex("^\\{"), TT_LBRACE},      // brackets
+        {std::regex("^\\s+"), TT_WHITESPACE},  // whitespace
+        {std::regex("^#.*\n"), TT_WHITESPACE}, // comment
+        {std::regex("^\\{"), TT_LBRACE},       // brackets
         {std::regex("^\\}"), TT_RBRACE},
         {std::regex("^\\["), TT_LBRACK},
         {std::regex("^\\]"), TT_RBRACK},
@@ -62,8 +68,10 @@ namespace snowlang
         {std::regex("^\\."), TT_PERIOD},
         {std::regex("^\\+"), TT_PLUS}, // operations
         {std::regex("^-"), TT_MINUS},
+        {std::regex("^\\*\\*"), TT_POW},
         {std::regex("^\\*"), TT_MULT},
         {std::regex("^/"), TT_DIV},
+        {std::regex("^%"), TT_REM},
         {std::regex("^>="), TT_GE},
         {std::regex("^>"), TT_GT},
         {std::regex("^=="), TT_EQ},
@@ -74,8 +82,9 @@ namespace snowlang
         {std::regex("^!"), TT_NOT},
         {std::regex("^mod\\b"), TT_MOD}, // keywords
         {std::regex("^wire\\b"), TT_WIRE},
-        {std::regex("^input\\b"), TT_INPUT},
-        {std::regex("^output\\b"), TT_OUTPUT},
+        {std::regex("^in:"), TT_INPUT},
+        {std::regex("^out:"), TT_OUTPUT},
+        {std::regex("^cons:"), TT_CONSTRUCT},
         {std::regex("^@"), TT_DEFINE},
         {std::regex("^="), TT_CONNECT},
         {std::regex("^if\\b"), TT_IF},

@@ -1,11 +1,11 @@
-mod onebitreg {
-    input{
-        bit data;
-        bit set;
-    }
-    output{
-        bit value;
-    }
+mod bitreg {
+in:
+    or data;
+    or set;
+    or read;
+out:
+    and value;
+cons:
     @ xor mem;
     = mem mem;
     @ or reset;
@@ -19,24 +19,65 @@ mod onebitreg {
     = data switch_on;
     = switch_on mem;
     = mem value;
+    = read value;
 }
 
-wire byte {
-    [8]bit data;
-}
-
-mod eightbitreg {
-    input{
-        byte data;
-        bit set;
-    }
-    output{
-        byte value;
-    }
+mod reg {
+in:
+    [8]or data;
+    and set;
+    and read;
+out:
+    [8]or value;
+cons:
     @ [8]onebitreg registers;
-    loop $n in (1,8) {
+    loop $n in (0, 7) {
         = data[$n] registers[$n].data;
-        = set registers.set[$n];
+        = set registers[$n].set;
+        = read registers[$n].read;
         = registers[$n].value value[$n];
-    } 
+    }
 }
+
+mod multiplexer {
+in:
+    [8]or address;
+out:
+    [256]and board;
+cons:
+    @ [8]nor neg;
+    = address neg;
+    loop $n in (0, 7) {
+        loop $m in (0,255) {
+            if (is $m % 2**$n < 2**$n / 2) {
+                = address.data[$n] board[$m];
+            }
+            else {
+                = neg[$n] board[$m];
+            }
+        }
+    }
+}
+
+mod ram{
+in:
+    [8]or address;
+    [8]or data;
+    or write;
+    or read;
+out:
+    [8]or out;
+cons:
+    @ multiplexer mult;
+    @ [256]reg regs;
+    = address mult.address;
+    loop $n in (0, 255) {
+        = set regs[$n].set;
+        = read regs[$n].read;
+        = mult.board[$n] regs[$n].set;
+        = mult.board[$n] regs[$n].read;
+        = regs[$n].value out;
+        = data regs[$n].data;
+    }
+}
+

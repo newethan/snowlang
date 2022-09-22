@@ -1,6 +1,6 @@
 #pragma once
 
-#include "snowlang.hpp"
+#include <iostream>
 #include "token.hpp"
 
 namespace snowlang::lexer

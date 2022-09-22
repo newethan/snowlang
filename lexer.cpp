@@ -1,3 +1,5 @@
+#include <regex>
+
 #include "lexer.hpp"
 #include "errorHandler.hpp"
 using namespace std;
@@ -30,7 +32,7 @@ namespace snowlang::lexer
                     state.pos - 1);
             }
             throw err::SnowlangException(
-                state.pos, state.pos, err::INVALID_TOKEN);
+                state.pos, state.pos, err::COULD_NOT_MAKE_TOKEN);
         }
     } // End of anonymous namespace
 
@@ -40,16 +42,9 @@ namespace snowlang::lexer
         LexState state{text};
         while (state.pos < text.length())
         {
-            Token nextToken;
-            try
-            {
-                nextToken = generateNextToken(state);
-            }
-            catch (err::SnowlangException &e)
-            {
-                throw;
-            }
-            if (nextToken.type == TT_WHITESPACE)
+            auto nextToken = generateNextToken(state);
+            if (nextToken.type == TT_WHITESPACE ||
+                nextToken.type == TT_COMMENT)
                 continue;
             tokens.push_back(nextToken);
         }

@@ -1,4 +1,3 @@
-#include "snowlang.hpp"
 #include "errorHandler.hpp"
 
 using namespace std;
@@ -61,8 +60,10 @@ namespace snowlang::err
         cout << "File '" << filename << "' ";
         cout << "line " << lineNumber << ":";
         cout << endl;
-        cout << "Fatal error :" << endl;
-        cout << message << endl;
+        cout << "\033[31m"
+             << "Fatal error:"
+             << "\033[0m" << endl;
+        cout << "\e[1m" << message << "\e[0m" << endl;
         cout << line << endl;
         for (int i = 0; i < posInLine; i++)
         {

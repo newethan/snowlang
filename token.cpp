@@ -1,4 +1,3 @@
-#include "snowlang.hpp"
 #include "token.hpp"
 
 using namespace std;
@@ -15,6 +14,7 @@ namespace snowlang
             "TT_NULL",
             "TT_EOF",
             "TT_WHITESPACE",
+            "TT_COMMENT",
             "TT_LBRACE",
             "TT_RBRACE",
             "TT_LBRACK",
@@ -26,12 +26,15 @@ namespace snowlang
             "TT_PERIOD",
             "TT_PLUS",
             "TT_MINUS",
+            "TT_POW",
             "TT_MULT",
             "TT_DIV",
+            "TT_REM",
             "TT_MOD",
             "TT_WIRE",
             "TT_INPUT",
             "TT_OUTPUT",
+            "TT_CONSTRUCT",
             "TT_DEFINE",
             "TT_CONNECT",
             "TT_IF",

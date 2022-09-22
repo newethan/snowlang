@@ -1,8 +1,18 @@
+arithmetic operator precedence:
+1. exponentiation
+    `**` (POW)
+2. unary operators
+    `+` (PLUS), `-` (MINUS)
+3. multiplication, division, modulo(remainder)
+    `*` (MULT), `/` (DIV), `%` (REM)
+4. addition, subtraction
+    `+` (PLUS), `-` (MINUS)  [both binary]
+
 script
     : (MOD IDEN LBRACE
-        INPUT LBRACE wire_content RBRACE
-        OUTPUT LBRACE wire_content RBRACE
-        block RBRACE
+        INPUT wire_content
+        OUTPUT wire_content
+        CONSTRUCT block RBRACE
         | WIRE IDEN LBRACE wire_content RBRACE)*
     ;
 wire_content
@@ -30,9 +40,13 @@ expr
     : term ((PLUS|MINUS) term)*
     ;
 term
-    : factor ((MULT|DIV) factor)*
+    : factor ((MULT|DIV|REM) factor)*
     ;
 factor
+    : (PLUS|MINUS) factor
+    : atom (POW factor)*
+    ;
+atom
     : VAR
     : INT
     : LPAREN expr RPAREN

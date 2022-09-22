@@ -1,7 +1,8 @@
 #pragma once
 
-#include "snowlang.hpp"
-#include "lexer.hpp"
+#include <iostream>
+#include <variant>
+#include "token.hpp"
 
 namespace snowlang
 {

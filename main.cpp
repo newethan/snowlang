@@ -1,5 +1,8 @@
-#include "snowlang.hpp"
+#include <iostream>
+#include <fstream>
+
 #include "lexer.hpp"
+#include "token.hpp"
 #include "parser.hpp"
 #include "node.hpp"
 #include "errorHandler.hpp"

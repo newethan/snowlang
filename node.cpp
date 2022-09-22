@@ -1,4 +1,3 @@
-#include "snowlang.hpp"
 #include "node.hpp"
 
 using namespace std;
@@ -30,7 +29,7 @@ namespace snowlang
         const string indentWith = "*** ";
         for (int i = 0; i < indent; i++)
             cout << indentWith;
-        cout << Node::reprNodeType(ast->type) << "; ";
+        cout << Node::reprNodeType(ast->type) << " ";
         if (ast->type == NT_LEAF)
         {
             auto &value = std::get<LeafValue>(ast->value);

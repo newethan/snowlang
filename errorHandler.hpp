@@ -1,13 +1,14 @@
 #pragma once
 
-#include "snowlang.hpp"
+#include <iostream>
 #include "token.hpp"
 
 namespace snowlang::err
 {
     // Error messages
     const std::string NOERR = "";
-    const std::string INVALID_TOKEN = "Invalid token.";
+    const std::string COULD_NOT_MAKE_TOKEN =
+        "Could not make token. Character may be illegal.";
     const std::string EXPECTED_RBRACK = "Expected ']'.";
     const std::string EXPECTED_LPAREN = "Expected '('.";
     const std::string EXPECTED_RPAREN = "Expected ')'.";
@@ -15,7 +16,7 @@ namespace snowlang::err
     const std::string EXPECTED_RBRACE = "Expected '}'.";
     const std::string EXPECTED_COMMA = "Expected ','.";
     const std::string EXPECTED_SEMICOLON = "Expected ';'.";
-    const std::string EXPECTED_FIRST_OF_FACTOR =
+    const std::string EXPECTED_FIRST_OF_ATOM =
         "Expected number, variable, '+', '-' or '('.";
     const std::string EXPECTED_FIRST_OF_COND_FACTOR =
         "Expected 'true', 'false', 'is', 'not' or '('.";
@@ -32,6 +33,7 @@ namespace snowlang::err
     const std::string EXPECTED_IN = "Expected 'in'.";
     const std::string EXPECTED_INPUT = "Expected 'input'.";
     const std::string EXPECTED_OUTPUT = "Expected 'output'.";
+    const std::string EXPECTED_CONSTRUCT = "Expected 'construct'.";
 
     // Custom exception class
     class SnowlangException : std::exception
