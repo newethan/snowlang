@@ -16,19 +16,23 @@ namespace snowlang::err
     const std::string EXPECTED_RBRACE = "Expected '}'.";
     const std::string EXPECTED_COMMA = "Expected ','.";
     const std::string EXPECTED_SEMICOLON = "Expected ';'.";
+    const std::string EXPECTED_ASSIGN = "Expected '='.";
     const std::string EXPECTED_FIRST_OF_ATOM =
-        "Expected number, variable, '+', '-' or '('.";
+        "Expected number, variable (identifier),"
+        " function call, '+', '-' or '('.";
     const std::string EXPECTED_FIRST_OF_COND_FACTOR =
-        "Expected 'true', 'false', 'is', 'not' or '('.";
+        "Expected 'true', 'false', 'not' or '('.";
     const std::string EXPECTED_FIRST_OF_INSTRUCTION =
-        "Expected '@', '=', 'loop' or 'if'";
+        "Expected 'let', 'con', 'for', 'while', 'break',"
+        " 'continue', 'if' or identifier.";
+    const std::string EXPECTED_FIRST_OF_FUNCTION_INSTRUCTION =
+        "Expected 'for', 'while', 'break',"
+        " 'continue', 'return', 'if' or identifier.";
     const std::string EXPECTED_COMPARISON =
         "Expected '>', '>=', '==', '<=' or '<'.";
     const std::string EXPECTED_EOI =
         "Unexpected token, expected end of input here.";
     const std::string EXPECTED_INT = "Expected integer.";
-    const std::string EXPECTED_VAR =
-        "Expected variable.";
     const std::string EXPECTED_IDEN = "Expected identifier.";
     const std::string EXPECTED_IN = "Expected 'in'.";
     const std::string EXPECTED_PUBLIC = "Expected 'public:'.";

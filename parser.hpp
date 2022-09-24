@@ -6,16 +6,19 @@
 
 namespace snowlang::parser
 {
-    struct ParseState
+    struct Parser
     {
         const std::vector<Token> &tokens;
         int pos = 0;
 
-        ParseState(const std::vector<Token> &t_tokens)
+        Parser(const std::vector<Token> &t_tokens)
             : tokens(t_tokens) {}
 
-        inline void advance(int positions = 1) { pos += positions; }
+        std::unique_ptr<Node> parse();
+
         inline Token current() { return tokens[pos]; }
+
+        inline void advance(int positions = 1) { pos += positions; }
 
         inline bool accept(
             TokenType type,
@@ -40,6 +43,28 @@ namespace snowlang::parser
 
     private:
         Token m_acceptedToken;
+        std::unique_ptr<Node> script();
+        std::unique_ptr<Node> declarations();
+        std::unique_ptr<Node> block();
+        std::unique_ptr<Node> functionBlock();
+        std::unique_ptr<Node> instruction();
+        std::unique_ptr<Node> functionInstruction();
+        std::unique_ptr<Node> item();
+        std::unique_ptr<Node> type();
+        std::unique_ptr<Node> expr();
+        std::unique_ptr<Node> orExpr();
+        std::unique_ptr<Node> equalityExpr();
+        std::unique_ptr<Node> inequalityExpr();
+        std::unique_ptr<Node> arithExpr();
+        std::unique_ptr<Node> term();
+        std::unique_ptr<Node> factor();
+        std::unique_ptr<Node> atom();
+        std::unique_ptr<Node> range();
+
+        std::unique_ptr<Node> parseBinOp(
+            std::unordered_set<TokenType> types,
+            std::function<std::unique_ptr<Node>()> funcLeft,
+            std::function<std::unique_ptr<Node>()> funcRight = nullptr);
     };
     std::unique_ptr<Node> parse(const std::vector<Token> &tokens);
 }

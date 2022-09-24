@@ -31,7 +31,7 @@ namespace snowlang::err
             {
                 pos += 1;
                 pos = text.find(c, pos);
-                if (pos == string::npos)
+                if ((size_t)pos == string::npos)
                     return -1;
                 count++;
             }
@@ -63,7 +63,7 @@ namespace snowlang::err
         cout << "\033[31m"
              << "Fatal error:"
              << "\033[0m" << endl;
-        cout << "\e[1m" << message << "\e[0m" << endl;
+        cout << "\033[1m" << message << "\033[0m" << endl;
         cout << line << endl;
         for (int i = 0; i < posInLine; i++)
         {

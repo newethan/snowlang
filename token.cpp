@@ -10,7 +10,7 @@ namespace snowlang
 
     string Token::reprTokenType(enum TokenType tokenType)
     {
-        return (const char *[]){
+        const char *reprs[] = {
             "TT_NULL",
             "TT_EOF",
             "TT_WHITESPACE",
@@ -35,25 +35,29 @@ namespace snowlang
             "TT_PRIVATE",
             "TT_LET",
             "TT_CON",
+            "TT_ASSIGN",
             "TT_IF",
             "TT_ELIF",
             "TT_ELSE",
-            "TT_IS",
             "TT_FOR",
+            "TT_WHILE",
+            "TT_BREAK",
+            "TT_CONTINUE",
+            "TT_RETURN",
             "TT_IN",
             "TT_OR",
             "TT_AND",
             "TT_NOT",
-            "TT_TRUE",
-            "TT_FALSE",
             "TT_GT",
             "TT_GE",
             "TT_EQ",
+            "TT_NEQ",
             "TT_LE",
             "TT_LT",
-            "TT_VAR",
-            "TT_IDEN",
-            "TT_INT"}[tokenType];
+            "TT_FLOAT",
+            "TT_INT",
+            "TT_IDEN"};
+        return reprs[tokenType];
     }
 
     string Token::repr()

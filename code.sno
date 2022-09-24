@@ -1,3 +1,22 @@
+let pow(base, exponent) {
+    result = 1;
+    for n in (1, exponent) {
+        result = result * base;
+    }
+    return result;
+}
+
+let modulo(number, modulo) {
+    if number < modulo {
+        return number;
+    }
+    result = number;
+    while result >= modulo {
+        result = result - modulo;
+    }
+    return result;
+}
+
 mod Bitreg {
 public:
     # input
@@ -37,11 +56,11 @@ public:
 
 private:
     let Bitreg[8] registers;
-    for $n in (0, 7) {
-        con data[$n] registers[$n].data;
-        con set registers[$n].set;
-        con read registers[$n].read;
-        con registers[$n].value value[$n];
+    for n in (0, 7) {
+        con data[n] registers[n].data;
+        con set registers[n].set;
+        con read registers[n].read;
+        con registers[n].value value[n];
     }
 }
 
@@ -56,13 +75,14 @@ public:
 private:
     let nor[8] neg;
     con address neg;
-    for $n in (0, 7) {
-        for $m in (0,255) {
-            if (is $m % 2**$n < 2**$n / 2) {
-                con address.data[$n] board[$m];
+    for n in (0, 7) {
+        for m in (0,255) {
+            # if (modulo(m, pow(2,n)) < pow(2,n) / 2)
+            if (m % 2**n < 2**n / 2) {
+                con address[n] board[m];
             }
             else {
-                con neg[$n] board[$m];
+                con neg[n] board[m];
             }
         }
     }
@@ -83,13 +103,13 @@ private:
     let Multiplexer mult;
     let Reg[256] regs;
     con address mult.address;
-    for $n in (0, 255) {
-        con set regs[$n].set;
-        con read regs[$n].read;
-        con mult.board[$n] regs[$n].set;
-        con mult.board[$n] regs[$n].read;
-        con regs[$n].value out;
-        con data regs[$n].data;
+    for n in (0, 255) {
+        con set regs[n].set;
+        con read regs[n].read;
+        con mult.board[n] regs[n].set;
+        con mult.board[n] regs[n].read;
+        con regs[n].value out;
+        con data regs[n].data;
     }
 }
 

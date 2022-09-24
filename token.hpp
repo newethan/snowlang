@@ -31,69 +31,75 @@ namespace snowlang
         TT_PRIVATE,
         TT_LET,
         TT_CON,
+        TT_ASSIGN,
         TT_IF,
         TT_ELIF,
         TT_ELSE,
-        TT_IS,
         TT_FOR,
+        TT_WHILE,
+        TT_BREAK,
+        TT_CONTINUE,
+        TT_RETURN,
         TT_IN,
         TT_OR,
         TT_AND,
         TT_NOT,
-        TT_TRUE,
-        TT_FALSE,
         TT_GT,
         TT_GE,
         TT_EQ,
+        TT_NEQ,
         TT_LE,
         TT_LT,
-        TT_VAR, // tokens with variable value
-        TT_IDEN,
-        TT_INT
+        TT_FLOAT, // tokens with variable value
+        TT_INT,
+        TT_IDEN
     };
 
     const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap{
-        {std::regex("^\\s+"), TT_WHITESPACE},  // whitespace
-        {std::regex("^#.*\n"), TT_WHITESPACE}, // comment
-        {std::regex("^\\{"), TT_LBRACE},       // brackets
+        {std::regex("^\\s+"), TT_WHITESPACE},
+        {std::regex("^#.*\n"), TT_COMMENT},
+        {std::regex("^\\{"), TT_LBRACE},
         {std::regex("^\\}"), TT_RBRACE},
         {std::regex("^\\["), TT_LBRACK},
         {std::regex("^\\]"), TT_RBRACK},
         {std::regex("^\\("), TT_LPAREN},
         {std::regex("^\\)"), TT_RPAREN},
-        {std::regex("^;"), TT_SEMICOLON}, // punctuation
+        {std::regex("^;"), TT_SEMICOLON},
         {std::regex("^,"), TT_COMMA},
         {std::regex("^\\."), TT_PERIOD},
-        {std::regex("^\\+"), TT_PLUS}, // operations
+        {std::regex("^\\+"), TT_PLUS},
         {std::regex("^-"), TT_MINUS},
         {std::regex("^\\*\\*"), TT_POW},
         {std::regex("^\\*"), TT_MULT},
         {std::regex("^/"), TT_DIV},
         {std::regex("^%"), TT_REM},
-        {std::regex("^>="), TT_GE},
-        {std::regex("^>"), TT_GT},
-        {std::regex("^=="), TT_EQ},
-        {std::regex("^<="), TT_LE},
-        {std::regex("^<"), TT_LT},
-        {std::regex("^\\|"), TT_OR},
-        {std::regex("^&"), TT_AND},
-        {std::regex("^!"), TT_NOT},
-        {std::regex("^mod\\b"), TT_MOD}, // keywords
+        {std::regex("^mod\\b"), TT_MOD},
         {std::regex("^public:"), TT_PUBLIC},
         {std::regex("^private:"), TT_PRIVATE},
         {std::regex("^let\\b"), TT_LET},
         {std::regex("^con\\b"), TT_CON},
+        {std::regex("^=(?!=)"), TT_ASSIGN},
         {std::regex("^if\\b"), TT_IF},
         {std::regex("^elif\\b"), TT_ELIF},
         {std::regex("^else\\b"), TT_ELSE},
-        {std::regex("^is\\b"), TT_IS},
         {std::regex("^for\\b"), TT_FOR},
+        {std::regex("^while\\b"), TT_WHILE},
+        {std::regex("^break\\b"), TT_BREAK},
+        {std::regex("^continue\\b"), TT_CONTINUE},
+        {std::regex("^return\\b"), TT_RETURN},
         {std::regex("^in\\b"), TT_IN},
-        {std::regex("^true\\b"), TT_TRUE},
-        {std::regex("^false\\b"), TT_FALSE},
-        {std::regex("^\\$\\w+"), TT_VAR}, // var values
+        {std::regex("^\\|"), TT_OR},
+        {std::regex("^&"), TT_AND},
+        {std::regex("^!(?!=)"), TT_NOT},
+        {std::regex("^>(?!=)"), TT_GT},
+        {std::regex("^>="), TT_GE},
+        {std::regex("^=="), TT_EQ},
+        {std::regex("^!="), TT_NEQ},
+        {std::regex("^<="), TT_LE},
+        {std::regex("^<(?!=)"), TT_LT},
+        {std::regex("^[0-9]+[.][0-9]+"), TT_FLOAT},
         {std::regex("^\\d+"), TT_INT},
-        {std::regex("^\\w+"), TT_IDEN}};
+        {std::regex("^\\w+\\b"), TT_IDEN}};
 
     class Token
     {

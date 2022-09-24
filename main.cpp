@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     {
         tokens = lexer::lex(text);
     }
-    catch (err::SnowlangException e)
+    catch (err::SnowlangException &e)
     {
         err::fatalErrorAbort(
             text,
@@ -48,9 +48,10 @@ int main(int argc, char *argv[])
     unique_ptr<Node> ast;
     try
     {
-        ast = parser::parse(tokens);
+        parser::Parser p(tokens);
+        ast = p.parse();
     }
-    catch (err::SnowlangException e)
+    catch (err::SnowlangException &e)
     {
         err::fatalErrorAbort(
             text,

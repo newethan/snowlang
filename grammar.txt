@@ -9,21 +9,40 @@ arithmetic operator precedence:
     `+` (PLUS), `-` (MINUS)  [both binary]
 
 script
-    : (MOD IDEN LBRACE PUBLIC declarations PRIVATE block RBRACE)*
+    : (MOD IDEN LBRACE PUBLIC declarations PRIVATE block RBRACE /
+        LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE function_block RBRACE)*
     ;
 declarations
-    : (DEFINE type IDEN SEMICOLON)*
+    : (LET type IDEN SEMICOLON)*
     ;
 block
     : (instruction)*
     ;
+function_block
+    : (function_instruction)*
+    ;
 instruction
-    : DEFINE type IDEN SEMICOLON
+    : LET type IDEN SEMICOLON
     : CONNECT item item SEMICOLON
-    : LOOP VAR IN range LBRACE block RBRACE
-    : IF cond_expr LBRACE block RBRACE
-        (ELIF cond_expr LBRACE block RBRACE)*
+    : IDEN ASSIGN expr SEMICOLON
+    : FOR IDEN IN range LBRACE block RBRACE
+    : WHILE expr LBRACE block RBRACE
+    : BREAK SEMICOLON
+    : CONTINUE SEMICOLON
+    : IF expr LBRACE block RBRACE
+        (ELIF expr LBRACE block RBRACE)*
         (ELSE LBRACE block RBRACE)?
+    ;
+function_instruction
+    : IDEN ASSIGN expr SEMICOLON
+    : FOR IDEN IN range LBRACE function_block RBRACE
+    : WHILE expr LBRACE block RBRACE
+    : BREAK SEMICOLON
+    : CONTINUE SEMICOLON
+    : IF expr LBRACE function_block RBRACE
+        (ELIF expr LBRACE function_block RBRACE)*
+        (ELSE LBRACE function_block RBRACE)?
+    : RETURN expr SEMICOLON
     ;
 item
     : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*
@@ -33,83 +52,34 @@ type
     : IDEN LBRACK INT RBRACK 
     ;
 expr
+    : equality_expr (AND equality_expr)*
+    ;
+or_expr
+    : equality_expr (OR equality_expr)*
+    ;
+equality_expr
+    : ineqality_expr ((EQ|NEQ) ineqality_expr)*
+    ;
+ineqality_expr
+    : arith_expr ((GT|GE|LE|LT) arith_expr)*
+    ;
+arith_expr
     : term ((PLUS|MINUS) term)*
     ;
 term
     : factor ((MULT|DIV|REM) factor)*
     ;
 factor
-    : (PLUS|MINUS) factor
+    : (PLUS|MINUS|NOT) factor
     : atom (POW factor)*
     ;
 atom
-    : VAR
+    : IDEN
     : INT
+    : FLOAT
     : LPAREN expr RPAREN
+    : IDEN LPAREN (expr (COMMA expr)*)? RPAREN
     ;
 range
     : LPAREN expr COMMA expr RPAREN
     ;
-cond_expr
-    : cond_term (OR cond_term)*
-    ;
-cond_term
-    : cond_factor (AND cond_factor)*
-    ;
-cond_factor
-    : TRUE
-    : FALSE
-    : IS expr GT expr
-    : IS expr GE expr
-    : IS expr EQ expr
-    : IS expr LE expr
-    : IS expr LT expr
-    : NOT cond_factor
-    : LPAREN cond_expr RPAREN
-
-examples:
-```
-mod 1bitreg {
-    input{
-        bit data;
-        bit set;
-    }
-    output{
-        bit value;
-    }
-    @ xor mem;
-    = mem mem;
-    @ or reset;
-    @ and switch_on;
-    @ and flip_if_on;
-    = set reset;
-    = reset flip_if_on;
-    = mem flip_if_on;
-    = flip_if_on mem;
-    = set switch_on;
-    = data switch_on;
-    = switch_on mem;
-    = mem value;
-}
-
-wire byte {
-    [8]bit data;
-}
-
-mod 8bitreg {
-    input{
-        byte data;
-        bit set;
-    }
-    output{
-        byte value;
-    }
-    @ [8]1bitreg registers;
-    loop $n in (1,8) {
-        = data[$n] registers[$n].data;
-        = set registers.set[$n];
-        = registers[$n].value value[$n];
-    } 
-}
-
-```

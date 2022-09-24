@@ -20,11 +20,18 @@ namespace snowlang
         NT_LET,
         NT_CON,
         NT_FOR,
+        NT_WHILE,
+        NT_BREAK,
+        NT_CONTINUE,
+        NT_RETURN,
         NT_IF,
         NT_BLOCK,
         NT_SCRIPT,
+        NT_FUNCDECL,
+        NT_FUNCCALL,
         NT_MOD,
-        NT_DECLARATIONS
+        NT_DECLARATIONS,
+        NT_VARASSIGN
     };
 
     /////////////// value structs
@@ -128,6 +135,36 @@ namespace snowlang
               block(std::move(t_block)) {}
     };
 
+    struct WhileValue
+    {
+        std::unique_ptr<Node> cond;
+        std::unique_ptr<Node> block;
+
+        WhileValue(
+            std::unique_ptr<Node> t_cond,
+            std::unique_ptr<Node> t_block)
+            : cond(std::move(t_cond)),
+              block(std::move(t_block)) {}
+    };
+
+    struct BreakValue
+    {
+        BreakValue() = default;
+    };
+
+    struct ContinueValue
+    {
+        ContinueValue() = default;
+    };
+
+    struct ReturnValue
+    {
+        std::unique_ptr<Node> expression;
+
+        ReturnValue(std::unique_ptr<Node> t_expression)
+            : expression(std::move(t_expression)) {}
+    };
+
     struct IfValue
     {
         std::vector<std::unique_ptr<Node>> conds;
@@ -144,7 +181,34 @@ namespace snowlang
         std::vector<std::unique_ptr<Node>> instructions;
 
         BlockValue(std::vector<std::unique_ptr<Node>> t_instructions)
-            : instructions(move(t_instructions)) {}
+            : instructions(std::move(t_instructions)) {}
+    };
+
+    struct FuncDeclValue
+    {
+        Token identifier;
+        std::vector<Token> argNames;
+        std::unique_ptr<Node> body;
+
+        FuncDeclValue(
+            Token &t_identifier,
+            std::vector<Token> &t_argNames,
+            std::unique_ptr<Node> t_body)
+            : identifier(t_identifier),
+              argNames(t_argNames),
+              body(std::move(t_body)) {}
+    };
+
+    struct FuncCallValue
+    {
+        Token identifier;
+        std::vector<std::unique_ptr<Node>> args;
+
+        FuncCallValue(
+            Token &t_identifier,
+            std::vector<std::unique_ptr<Node>> t_args)
+            : identifier(t_identifier),
+              args(std::move(t_args)) {}
     };
 
     struct ModuleValue
@@ -158,8 +222,8 @@ namespace snowlang
             std::unique_ptr<Node> t_declarations,
             std::unique_ptr<Node> t_block)
             : identifier(t_identifier),
-              declarations(move(t_declarations)),
-              block(move(t_block)) {}
+              declarations(std::move(t_declarations)),
+              block(std::move(t_block)) {}
     };
 
     struct DeclarationsValue
@@ -170,15 +234,27 @@ namespace snowlang
         DeclarationsValue(
             std::vector<std::unique_ptr<Node>> t_types,
             std::vector<Token> t_identifiers)
-            : types(move(t_types)), identifiers(t_identifiers) {}
+            : types(std::move(t_types)), identifiers(t_identifiers) {}
     };
 
     struct ScriptValue
     {
-        std::vector<std::unique_ptr<Node>> modules;
+        std::vector<std::unique_ptr<Node>> fields;
 
-        ScriptValue(std::vector<std::unique_ptr<Node>> t_modules)
-            : modules(move(t_modules)) {}
+        ScriptValue(std::vector<std::unique_ptr<Node>> t_fields)
+            : fields(std::move(t_fields)) {}
+    };
+
+    struct VarAssignValue
+    {
+        Token identifier;
+        std::unique_ptr<Node> expression;
+
+        VarAssignValue(
+            Token t_identifier,
+            std::unique_ptr<Node> t_expression)
+            : identifier(t_identifier),
+              expression(std::move(t_expression)) {}
     };
 
     ///////////////
@@ -193,11 +269,18 @@ namespace snowlang
             LetValue,
             ConValue,
             ForValue,
+            WhileValue,
+            BreakValue,
+            ContinueValue,
+            ReturnValue,
             IfValue,
             BlockValue,
+            FuncDeclValue,
+            FuncCallValue,
             ModuleValue,
             DeclarationsValue,
-            ScriptValue>;
+            ScriptValue,
+            VarAssignValue>;
 
     class Node
     {

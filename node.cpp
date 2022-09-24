@@ -6,7 +6,7 @@ namespace snowlang
 {
     string Node::reprNodeType(enum NodeType nodeType)
     {
-        return (const char *[]){
+        const char *reprs[] = {
             "NT_BINOP",
             "NT_UNOP",
             "NT_LEAF",
@@ -16,11 +16,19 @@ namespace snowlang
             "NT_LET",
             "NT_CON",
             "NT_FOR",
+            "NT_WHILE",
+            "NT_BREAK",
+            "NT_CONTINUE",
+            "NT_RETURN",
             "NT_IF",
             "NT_BLOCK",
             "NT_SCRIPT",
+            "NT_FUNCDECL",
+            "NT_FUNCCALL",
             "NT_MOD",
-            "NT_DECLARATIONS"}[nodeType];
+            "NT_DECLARATIONS",
+            "NT_VARASSIGN"};
+        return reprs[nodeType];
     }
 
     void printAst(const std::unique_ptr<Node> &ast, int indent)
@@ -92,11 +100,26 @@ namespace snowlang
             printAst(value.range, indent + 1);
             printAst(value.block, indent + 1);
         }
+        else if (ast->type == NT_WHILE)
+        {
+            auto &value = std::get<WhileValue>(ast->value);
+            cout << endl;
+            printAst(value.cond, indent + 1);
+            printAst(value.block, indent + 1);
+        }
+        else if (ast->type == NT_BREAK)
+        {
+            cout << endl;
+        }
+        else if (ast->type == NT_CONTINUE)
+        {
+            cout << endl;
+        }
         else if (ast->type == NT_IF)
         {
             auto &value = std::get<IfValue>(ast->value);
             cout << endl;
-            for (int i = 0; i < value.conds.size(); i++)
+            for (int i = 0; i < (int)value.conds.size(); i++)
             {
                 printAst(value.conds[i], indent + 1);
                 printAst(value.ifBlocks[i], indent + 1);
@@ -119,9 +142,9 @@ namespace snowlang
         {
             auto &value = std::get<ScriptValue>(ast->value);
             cout << endl;
-            for (const auto &mod : value.modules)
+            for (const auto &field : value.fields)
             {
-                printAst(mod, indent + 1);
+                printAst(field, indent + 1);
             }
         }
         else if (ast->type == NT_MOD)
@@ -135,13 +158,41 @@ namespace snowlang
         {
             auto &value = std::get<DeclarationsValue>(ast->value);
             cout << endl;
-            for (int i = 0; i < value.types.size(); i++)
+            for (int i = 0; i < (int)value.types.size(); i++)
             {
                 printAst(value.types[i], indent + 1);
                 for (int i = 0; i < indent + 1; i++)
                     cout << indentWith;
                 cout << value.identifiers[i].repr() << endl;
             }
+        }
+        else if (ast->type == NT_VARASSIGN)
+        {
+            auto &value = std::get<VarAssignValue>(ast->value);
+            cout << "iden: " << value.identifier.repr() << endl;
+            printAst(value.expression, indent + 1);
+        }
+        else if (ast->type == NT_RETURN)
+        {
+            auto &value = std::get<ReturnValue>(ast->value);
+            cout << endl;
+            printAst(value.expression, indent + 1);
+        }
+        else if (ast->type == NT_FUNCDECL)
+        {
+            auto &value = std::get<FuncDeclValue>(ast->value);
+            cout << "iden: " << value.identifier.repr() << ". args:";
+            for (auto &arg : value.argNames)
+                cout << " " << arg.repr();
+            cout << endl;
+            printAst(value.body, indent + 1);
+        }
+        else if (ast->type == NT_FUNCCALL)
+        {
+            auto &value = std::get<FuncCallValue>(ast->value);
+            cout << "iden: " << value.identifier.repr() << ". args:" << endl;
+            for (auto &arg : value.args)
+                printAst(arg, indent + 1);
         }
     }
 }
