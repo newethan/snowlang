@@ -9,11 +9,8 @@ arithmetic operator precedence:
     `+` (PLUS), `-` (MINUS)  [both binary]
 
 script
-    : (MOD IDEN LBRACE PUBLIC declarations PRIVATE block RBRACE /
+    : (MOD IDEN LBRACE block RBRACE /
         LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE function_block RBRACE)*
-    ;
-declarations
-    : (LET type IDEN SEMICOLON)*
     ;
 block
     : (instruction)*
@@ -22,10 +19,10 @@ function_block
     : (function_instruction)*
     ;
 instruction
-    : LET type IDEN SEMICOLON
+    : LET IDEN (LBRACK INT RBRACK)? IDEN SEMICOLON
     : CONNECT item item SEMICOLON
     : IDEN ASSIGN expr SEMICOLON
-    : FOR IDEN IN range LBRACE block RBRACE
+    : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE block RBRACE
     : WHILE expr LBRACE block RBRACE
     : BREAK SEMICOLON
     : CONTINUE SEMICOLON
@@ -35,7 +32,7 @@ instruction
     ;
 function_instruction
     : IDEN ASSIGN expr SEMICOLON
-    : FOR IDEN IN range LBRACE function_block RBRACE
+    : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE function_block RBRACE
     : WHILE expr LBRACE block RBRACE
     : BREAK SEMICOLON
     : CONTINUE SEMICOLON
@@ -46,10 +43,6 @@ function_instruction
     ;
 item
     : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*
-    ;
-type
-    : IDEN
-    : IDEN LBRACK INT RBRACK 
     ;
 expr
     : equality_expr (AND equality_expr)*
@@ -79,7 +72,4 @@ atom
     : FLOAT
     : LPAREN expr RPAREN
     : IDEN LPAREN (expr (COMMA expr)*)? RPAREN
-    ;
-range
-    : LPAREN expr COMMA expr RPAREN
     ;

@@ -1,13 +1,17 @@
+#pragma once
+
 #include <iostream>
 #include <vector>
 #include <memory>
 #include <functional>
+#include <unordered_map>
 
 namespace snowlang
 {
 
     enum GateType
     {
+        GT_NULL,
         GT_OR,   // any dependency is active
         GT_AND,  // all dependencies are active
         GT_XOR,  // an odd number of dependencies are active
@@ -19,10 +23,12 @@ namespace snowlang
     class LogicGate
     {
     public:
-        std::string identidier;
         GateType type;
-        bool active;
+        bool active = false;
 
+        LogicGate(GateType t_type)
+            : type(t_type) {}
+        LogicGate() = default;
         void generateNextValue();
         inline void update() { active = m_nextValue; }
         inline void addDependency(LogicGate *dependency)
@@ -32,15 +38,37 @@ namespace snowlang
 
     private:
         std::vector<LogicGate *> m_dependencies;
-        bool m_nextValue;
+        bool m_nextValue = false;
     };
 
     class Module
     {
     public:
-        std::string name;
-        std::vector<LogicGate> gates;
-        std::vector<std::unique_ptr<Module>> children;
+        // maps name to gate (representing singular gates)
+        std::unordered_map<std::string, LogicGate> gates;
+
+        // maps name to gate vector (representing gate arrays)
+        std::unordered_map<
+            std::string,
+            std::vector<LogicGate>>
+            gateArrays;
+
+        // maps module name to (owned) module pointer
+        // (representing single modules)
+        std::unordered_map<
+            std::string,
+            std::unique_ptr<Module>>
+            modules;
+
+        // maps name to vector of (owned) module pointers
+        // (representing module arrays)
+        std::unordered_map<
+            std::string,
+            std::vector<std::unique_ptr<Module>>>
+            moduleArrays;
+
         void allGates(std::function<void(LogicGate)> func);
+
+        bool alreadyDefined(const std::string &identifier);
     };
 }

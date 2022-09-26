@@ -27,8 +27,6 @@ namespace snowlang
         TT_DIV,
         TT_REM,
         TT_MOD, // keywords
-        TT_PUBLIC,
-        TT_PRIVATE,
         TT_LET,
         TT_CON,
         TT_ASSIGN,
@@ -74,8 +72,6 @@ namespace snowlang
         {std::regex("^/"), TT_DIV},
         {std::regex("^%"), TT_REM},
         {std::regex("^mod\\b"), TT_MOD},
-        {std::regex("^public:"), TT_PUBLIC},
-        {std::regex("^private:"), TT_PRIVATE},
         {std::regex("^let\\b"), TT_LET},
         {std::regex("^con\\b"), TT_CON},
         {std::regex("^=(?!=)"), TT_ASSIGN},

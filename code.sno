@@ -18,7 +18,6 @@ let modulo(number, modulo) {
 }
 
 mod Bitreg {
-public:
     # input
     let or data;
     let or set;
@@ -27,7 +26,6 @@ public:
     # ouput
     let and value;
 
-private:
     let xor mem;
     con mem mem;
     let or reset;
@@ -45,7 +43,6 @@ private:
 }
 
 mod Reg {
-public:
     # input
     let or[8] data;
     let and set;
@@ -54,7 +51,6 @@ public:
     #output
     let or[8] value;
 
-private:
     let Bitreg[8] registers;
     for n in (0, 7) {
         con data[n] registers[n].data;
@@ -65,14 +61,12 @@ private:
 }
 
 mod Multiplexer {
-public:
     # input
     let or[8] address;
 
     # output
     let and[256] board;
 
-private:
     let nor[8] neg;
     con address neg;
     for n in (0, 7) {
@@ -89,7 +83,6 @@ private:
 }
 
 mod Ram {
-public:
     # input
     let or[8] address;
     let or[8] data;
@@ -99,7 +92,6 @@ public:
     # output
     let or[8] out;
 
-private:
     let Multiplexer mult;
     let Reg[256] regs;
     con address mult.address;
@@ -114,8 +106,6 @@ private:
 }
 
 mod Main {
-public:
 
-private:
     let Ram ram; 
 }

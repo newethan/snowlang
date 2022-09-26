@@ -45,21 +45,20 @@ namespace snowlang::parser
         vector<unique_ptr<Node>> fields;
         while (accept({TT_MOD, TT_LET}))
         {
+            int posStart = accepted().tokenStart;
             if (accepted().type == TT_MOD)
             {
                 accept(TT_IDEN, err::EXPECTED_IDEN);
                 auto identifier = accepted();
                 accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                accept(TT_PUBLIC, err::EXPECTED_PUBLIC);
-                auto decs = declarations();
-                accept(TT_PRIVATE, err::EXPECTED_PRIVATE);
-                auto blockNode = block();
+                auto body = block();
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                int posEnd = accepted().tokenEnd;
 
                 fields.push_back(make_unique<Node>(
                     NT_MOD,
-                    ModuleValue(
-                        identifier, move(decs), move(blockNode))));
+                    ModuleValue(identifier, move(body)),
+                    posStart, posEnd));
             }
             else if (accepted().type == TT_LET)
             {
@@ -79,30 +78,22 @@ namespace snowlang::parser
                 accept(TT_LBRACE, err::EXPECTED_LBRACE);
                 auto body = functionBlock();
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                int posEnd = accepted().tokenEnd;
 
                 fields.push_back(make_unique<Node>(
                     NT_FUNCDECL,
-                    FuncDeclValue(
-                        identifier, argNames, move(body))));
+                    FuncDeclValue(identifier, argNames, move(body)),
+                    posStart, posEnd));
             }
         }
-        return make_unique<Node>(NT_SCRIPT, ScriptValue(move(fields)));
-    }
-
-    unique_ptr<Node> Parser::declarations()
-    {
-        vector<unique_ptr<Node>> types;
-        vector<Token> identifiers;
-        while (accept(TT_LET))
+        int posStart = 0, posEnd = 0;
+        if (!fields.empty()) // avoid undefined behavior
         {
-            types.push_back(type());
-            accept(TT_IDEN, err::EXPECTED_IDEN);
-            identifiers.push_back(accepted());
-            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            posStart = fields.front()->posStart;
+            posEnd = fields.back()->posEnd;
         }
         return make_unique<Node>(
-            NT_DECLARATIONS,
-            DeclarationsValue(move(types), identifiers));
+            NT_BLOCK, BlockValue(move(fields)), posStart, posEnd);
     }
 
     unique_ptr<Node> Parser::block()
@@ -113,9 +104,16 @@ namespace snowlang::parser
         {
             instructions.push_back(instruction());
         }
+        int posStart = 0, posEnd = 0;
+        if (!instructions.empty()) // avoid undefined behavior
+        {
+            posStart = instructions.front()->posStart;
+            posEnd = instructions.back()->posEnd;
+        }
         return make_unique<Node>(
             NT_BLOCK,
-            BlockValue(move(instructions)));
+            BlockValue(move(instructions)),
+            posStart, posEnd);
     }
 
     unique_ptr<Node> Parser::functionBlock()
@@ -126,31 +124,51 @@ namespace snowlang::parser
         {
             instructions.push_back(functionInstruction());
         }
+        int posStart = 0, posEnd = 0;
+        if (!instructions.empty()) // avoid undefined behavior
+        {
+            posStart = instructions.front()->posStart;
+            posEnd = instructions.back()->posEnd;
+        }
         return make_unique<Node>(
             NT_BLOCK,
-            BlockValue(move(instructions)));
+            BlockValue(move(instructions)),
+            posStart, posEnd);
     }
 
     unique_ptr<Node> Parser::instruction()
     {
+        int posStart = accepted().tokenStart;
         if (accepted().type == TT_LET)
         {
-            auto typeNode = type();
+            accept(TT_IDEN, err::EXPECTED_IDEN);
+            Token typeName = accepted();
+            Token arraySize;
+            if (accept(TT_LBRACK)) // Optional - type is array
+            {
+                accept(TT_INT, err::EXPECTED_INT);
+                arraySize = accepted();
+                accept(TT_RBRACK, err::EXPECTED_RBRACK);
+            }
             accept(TT_IDEN, err::EXPECTED_IDEN);
             auto identidier = accepted();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
-                NT_LET,
-                LetValue(move(typeNode), identidier));
+                NT_DEFINE,
+                DefineValue(typeName, arraySize, identidier),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_CON)
         {
             auto left = item();
             auto right = item();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_CON,
-                ConValue(move(left), move(right)));
+                ConValue(move(left), move(right)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_IDEN)
         {
@@ -158,22 +176,30 @@ namespace snowlang::parser
             accept(TT_ASSIGN, err::EXPECTED_ASSIGN);
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_VARASSIGN,
-                VarAssignValue(identifier, move(expression)));
+                VarAssignValue(identifier, move(expression)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_FOR)
         {
             accept(TT_IDEN, err::EXPECTED_IDEN);
             auto var = accepted();
             accept(TT_IN, err::EXPECTED_IN);
-            auto rangeNode = range();
+            accept(TT_LPAREN, err::EXPECTED_LPAREN);
+            auto from = expr();
+            accept(TT_COMMA, err::EXPECTED_COMMA);
+            auto to = expr();
+            accept(TT_RPAREN, err::EXPECTED_RPAREN);
             accept(TT_LBRACE, err::EXPECTED_LBRACE);
             auto blockNode = block();
             accept(TT_RBRACE, err::EXPECTED_RBRACE);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_FOR,
-                ForValue(var, move(rangeNode), move(blockNode)));
+                ForValue(var, move(from), move(to), move(blockNode)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_WHILE)
         {
@@ -181,19 +207,25 @@ namespace snowlang::parser
             accept(TT_LBRACE, err::EXPECTED_LBRACE);
             auto blockNode = block();
             accept(TT_RBRACE, err::EXPECTED_RBRACE);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_WHILE,
-                WhileValue(move(cond), move(blockNode)));
+                WhileValue(move(cond), move(blockNode)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_BREAK)
         {
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            return make_unique<Node>(NT_BREAK, BreakValue());
+            int posEnd = accepted().tokenEnd;
+            return make_unique<Node>(
+                NT_BREAK, BreakValue(), posStart, posEnd);
         }
         else if (accepted().type == TT_CONTINUE)
         {
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            return make_unique<Node>(NT_CONTINUE, ContinueValue());
+            int posEnd = accepted().tokenEnd;
+            return make_unique<Node>(
+                NT_CONTINUE, ContinueValue(), posStart, posEnd);
         }
         else if (accepted().type == TT_IF)
         {
@@ -212,9 +244,11 @@ namespace snowlang::parser
                 ifBlocks.push_back(block());
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
             }
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_IF,
-                IfValue(move(conds), move(ifBlocks)));
+                IfValue(move(conds), move(ifBlocks)),
+                posStart, posEnd);
         }
         throw err::SnowlangException(
             current(),
@@ -223,28 +257,37 @@ namespace snowlang::parser
 
     unique_ptr<Node> Parser::functionInstruction()
     {
+        int posStart = accepted().tokenStart;
         if (accepted().type == TT_IDEN)
         {
             auto identifier = accepted();
             accept(TT_ASSIGN, err::EXPECTED_ASSIGN);
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_VARASSIGN,
-                VarAssignValue(identifier, move(expression)));
+                VarAssignValue(identifier, move(expression)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_FOR)
         {
             accept(TT_IDEN, err::EXPECTED_IDEN);
             auto var = accepted();
             accept(TT_IN, err::EXPECTED_IN);
-            auto rangeNode = range();
+            accept(TT_LPAREN, err::EXPECTED_LPAREN);
+            auto from = expr();
+            accept(TT_COMMA, err::EXPECTED_COMMA);
+            auto to = expr();
+            accept(TT_RPAREN, err::EXPECTED_RPAREN);
             accept(TT_LBRACE, err::EXPECTED_LBRACE);
             auto blockNode = functionBlock();
             accept(TT_RBRACE, err::EXPECTED_RBRACE);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_FOR,
-                ForValue(var, move(rangeNode), move(blockNode)));
+                ForValue(var, move(from), move(to), move(blockNode)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_WHILE)
         {
@@ -252,27 +295,34 @@ namespace snowlang::parser
             accept(TT_LBRACE, err::EXPECTED_LBRACE);
             auto blockNode = functionBlock();
             accept(TT_RBRACE, err::EXPECTED_RBRACE);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_WHILE,
-                WhileValue(move(cond), move(blockNode)));
+                WhileValue(move(cond), move(blockNode)),
+                posStart, posEnd);
         }
         else if (accepted().type == TT_BREAK)
         {
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            return make_unique<Node>(NT_BREAK, BreakValue());
+            int posEnd = accepted().tokenEnd;
+            return make_unique<Node>(
+                NT_BREAK, BreakValue(), posStart, posEnd);
         }
         else if (accepted().type == TT_CONTINUE)
         {
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            return make_unique<Node>(NT_CONTINUE, ContinueValue());
+            int posEnd = accepted().tokenEnd;
+            return make_unique<Node>(
+                NT_CONTINUE, ContinueValue(), posStart, posEnd);
         }
         else if (accepted().type == TT_RETURN)
         {
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_RETURN,
-                ReturnValue(move(expression)));
+                ReturnValue(move(expression)), posStart, posEnd);
         }
         else if (accepted().type == TT_IF)
         {
@@ -291,9 +341,10 @@ namespace snowlang::parser
                 ifBlocks.push_back(functionBlock());
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
             }
+            int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_IF,
-                IfValue(move(conds), move(ifBlocks)));
+                IfValue(move(conds), move(ifBlocks)), posStart, posEnd);
         }
         throw err::SnowlangException(
             current(),
@@ -303,6 +354,7 @@ namespace snowlang::parser
     unique_ptr<Node> Parser::item()
     {
         accept(TT_IDEN, err::EXPECTED_IDEN);
+        int posStart = accepted().tokenStart;
         auto identifier = accepted();
         unique_ptr<Node> index = nullptr;
         if (accept(TT_LBRACK)) // Optional indexing
@@ -311,37 +363,33 @@ namespace snowlang::parser
             accept(TT_RBRACK, err::EXPECTED_RBRACK);
         }
         unique_ptr<Node> next = nullptr;
-        if (accept(TT_PERIOD)) // Optional: next
-            next = item();
-        return make_unique<Node>(
-            NT_ITEM,
-            ItemValue(identifier, move(index), move(next)));
-    }
-
-    unique_ptr<Node> Parser::type()
-    {
-        accept(TT_IDEN, err::EXPECTED_IDEN);
-        Token identifier = accepted();
-        Token arraySize;
-        if (accept(TT_LBRACK)) // Optional - type is array
+        int posEnd = accepted().tokenEnd;
+        if (accept(TT_PERIOD)) // Optional member access
         {
-            accept(TT_INT, err::EXPECTED_INT);
-            arraySize = accepted();
-            accept(TT_RBRACK, err::EXPECTED_RBRACK);
+            next = item();
+            posEnd = next->posEnd;
         }
         return make_unique<Node>(
-            NT_TYPE, TypeValue(identifier, arraySize));
+            NT_ITEM,
+            ItemValue(identifier, move(index), move(next)),
+            posStart, posEnd);
     }
 
     unique_ptr<Node> Parser::expr()
     {
         return parseBinOp({TT_AND}, [this]()
+                          { return this->orExpr(); });
+    }
+
+    unique_ptr<Node> Parser::orExpr()
+    {
+        return parseBinOp({TT_OR}, [this]()
                           { return this->equalityExpr(); });
     }
 
     unique_ptr<Node> Parser::equalityExpr()
     {
-        return parseBinOp({TT_OR}, [this]()
+        return parseBinOp({TT_EQ, TT_NEQ}, [this]()
                           { return this->inequalityExpr(); });
     }
 
@@ -368,10 +416,13 @@ namespace snowlang::parser
         if (accept({TT_PLUS, TT_MINUS, TT_NOT}))
         {
             auto operationToken = accepted();
+            int posStart = accepted().tokenStart;
             auto node = factor();
+            int posEnd = node->posEnd;
             return make_unique<Node>(
                 NT_UNOP,
-                UnOpValue(move(node), operationToken));
+                UnOpValue(move(node), operationToken),
+                posStart, posEnd);
         }
         return parseBinOp(
             {TT_POW}, [this]()
@@ -385,12 +436,14 @@ namespace snowlang::parser
         if (accept({TT_FLOAT, TT_INT}))
         {
             return make_unique<Node>(
-                NT_LEAF,
-                LeafValue(accepted()));
+                NT_LEAF, LeafValue(accepted()),
+                accepted().tokenStart, accepted().tokenEnd);
         }
         else if (accept(TT_IDEN))
         {
             auto identifier = accepted();
+            int posStart = accepted().tokenStart;
+            int posEnd = accepted().tokenEnd;
             if (accept(TT_LPAREN)) // is function call
             {
                 vector<unique_ptr<Node>> args;
@@ -402,33 +455,20 @@ namespace snowlang::parser
                     } while (accept(TT_COMMA));
                     accept(TT_RPAREN, err::EXPECTED_RPAREN);
                 }
+                posEnd = accepted().tokenEnd;
                 return make_unique<Node>(
                     NT_FUNCCALL,
-                    FuncCallValue(identifier, move(args)));
+                    FuncCallValue(identifier, move(args)),
+                    posStart, posEnd);
             }
             else // is variable
-            {
                 return make_unique<Node>(
-                    NT_LEAF,
-                    LeafValue(identifier));
-            }
+                    NT_LEAF, LeafValue(identifier), posStart, posEnd);
         }
         accept(TT_LPAREN, err::EXPECTED_FIRST_OF_ATOM);
         auto node = expr();
         accept(TT_RPAREN, err::EXPECTED_RPAREN);
         return node;
-    }
-
-    unique_ptr<Node> Parser::range()
-    {
-        accept(TT_LPAREN, err::EXPECTED_LPAREN);
-        auto from = expr();
-        accept(TT_COMMA, err::EXPECTED_COMMA);
-        auto to = expr();
-        accept(TT_RPAREN, err::EXPECTED_RPAREN);
-        return make_unique<Node>(
-            NT_RANGE,
-            RangeValue(move(from), move(to)));
     }
 
     unique_ptr<Node> Parser::parseBinOp(
@@ -447,7 +487,8 @@ namespace snowlang::parser
             auto right = funcRight();
             left = make_unique<Node>(
                 NT_BINOP,
-                BinOpValue(move(left), move(right), operationToken));
+                BinOpValue(move(left), move(right), operationToken),
+                left->posStart, right->posEnd);
         }
         return left;
     }

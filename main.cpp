@@ -6,6 +6,7 @@
 #include "parser.hpp"
 #include "node.hpp"
 #include "errorHandler.hpp"
+#include "interpreter.hpp"
 
 using namespace std;
 using namespace snowlang;
@@ -60,5 +61,20 @@ int main(int argc, char *argv[])
             e.posEnd,
             e.message);
     }
-    printAst(ast);
+    // printAst(ast);
+
+    interpreter::Interpreter i(move(ast));
+    try
+    {
+        auto mainMod = i.interpret();
+    }
+    catch (err::SnowlangException &e)
+    {
+        err::fatalErrorAbort(
+            text,
+            filename,
+            e.posStart,
+            e.posEnd,
+            e.message);
+    }
 }

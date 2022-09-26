@@ -31,8 +31,6 @@ namespace snowlang
             "TT_DIV",
             "TT_REM",
             "TT_MOD",
-            "TT_PUBLIC",
-            "TT_PRIVATE",
             "TT_LET",
             "TT_CON",
             "TT_ASSIGN",

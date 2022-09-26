@@ -44,13 +44,11 @@ namespace snowlang::parser
     private:
         Token m_acceptedToken;
         std::unique_ptr<Node> script();
-        std::unique_ptr<Node> declarations();
         std::unique_ptr<Node> block();
         std::unique_ptr<Node> functionBlock();
         std::unique_ptr<Node> instruction();
         std::unique_ptr<Node> functionInstruction();
         std::unique_ptr<Node> item();
-        std::unique_ptr<Node> type();
         std::unique_ptr<Node> expr();
         std::unique_ptr<Node> orExpr();
         std::unique_ptr<Node> equalityExpr();
@@ -59,7 +57,6 @@ namespace snowlang::parser
         std::unique_ptr<Node> term();
         std::unique_ptr<Node> factor();
         std::unique_ptr<Node> atom();
-        std::unique_ptr<Node> range();
 
         std::unique_ptr<Node> parseBinOp(
             std::unordered_set<TokenType> types,

@@ -14,10 +14,8 @@ namespace snowlang
         NT_BINOP,
         NT_UNOP,
         NT_LEAF,
-        NT_RANGE,
-        NT_TYPE,
         NT_ITEM,
-        NT_LET,
+        NT_DEFINE,
         NT_CON,
         NT_FOR,
         NT_WHILE,
@@ -26,11 +24,9 @@ namespace snowlang
         NT_RETURN,
         NT_IF,
         NT_BLOCK,
-        NT_SCRIPT,
         NT_FUNCDECL,
         NT_FUNCCALL,
         NT_MOD,
-        NT_DECLARATIONS,
         NT_VARASSIGN
     };
 
@@ -67,24 +63,6 @@ namespace snowlang
             : node(std::move(t_node)), operationToken(t_operationToken) {}
     };
 
-    struct RangeValue
-    {
-        std::unique_ptr<Node> from{nullptr};
-        std::unique_ptr<Node> to{nullptr};
-
-        RangeValue(std::unique_ptr<Node> t_from, std::unique_ptr<Node> t_to)
-            : from(std::move(t_from)), to(std::move(t_to)) {}
-    };
-
-    struct TypeValue
-    {
-        Token identifier;
-        Token arraySize; // If token is TT_NULL, type is not array.
-
-        TypeValue(Token t_identifier, Token t_arraySize = Token())
-            : identifier(t_identifier), arraySize(t_arraySize) {}
-    };
-
     struct ItemValue
     {
         Token identifier;
@@ -101,13 +79,19 @@ namespace snowlang
               next(std::move(t_next)) {}
     };
 
-    struct LetValue
+    struct DefineValue
     {
-        std::unique_ptr<Node> type{nullptr};
+        Token typeName;
+        Token arraySize;
         Token identifier;
 
-        LetValue(std::unique_ptr<Node> t_type, Token t_identifier)
-            : type(std::move(t_type)), identifier(t_identifier) {}
+        DefineValue(
+            Token t_typeName,
+            Token t_arraySize,
+            Token t_identifier)
+            : typeName(t_typeName),
+              arraySize(t_arraySize),
+              identifier(t_identifier) {}
     };
 
     struct ConValue
@@ -123,15 +107,18 @@ namespace snowlang
     struct ForValue
     {
         Token var;
-        std::unique_ptr<Node> range{nullptr};
-        std::unique_ptr<Node> block{nullptr};
+        std::unique_ptr<Node> from;
+        std::unique_ptr<Node> to;
+        std::unique_ptr<Node> block;
 
         ForValue(
             Token t_var,
-            std::unique_ptr<Node> t_range,
+            std::unique_ptr<Node> t_from,
+            std::unique_ptr<Node> t_to,
             std::unique_ptr<Node> t_block)
             : var(t_var),
-              range(std::move(t_range)),
+              from(std::move(t_from)),
+              to(std::move(t_to)),
               block(std::move(t_block)) {}
     };
 
@@ -178,10 +165,10 @@ namespace snowlang
 
     struct BlockValue
     {
-        std::vector<std::unique_ptr<Node>> instructions;
+        std::vector<std::unique_ptr<Node>> fields;
 
         BlockValue(std::vector<std::unique_ptr<Node>> t_instructions)
-            : instructions(std::move(t_instructions)) {}
+            : fields(std::move(t_instructions)) {}
     };
 
     struct FuncDeclValue
@@ -214,35 +201,13 @@ namespace snowlang
     struct ModuleValue
     {
         Token identifier;
-        std::unique_ptr<Node> declarations;
-        std::unique_ptr<Node> block;
+        std::unique_ptr<Node> body;
 
         ModuleValue(
             Token t_identifier,
-            std::unique_ptr<Node> t_declarations,
-            std::unique_ptr<Node> t_block)
+            std::unique_ptr<Node> t_body)
             : identifier(t_identifier),
-              declarations(std::move(t_declarations)),
-              block(std::move(t_block)) {}
-    };
-
-    struct DeclarationsValue
-    {
-        std::vector<std::unique_ptr<Node>> types;
-        std::vector<Token> identifiers;
-
-        DeclarationsValue(
-            std::vector<std::unique_ptr<Node>> t_types,
-            std::vector<Token> t_identifiers)
-            : types(std::move(t_types)), identifiers(t_identifiers) {}
-    };
-
-    struct ScriptValue
-    {
-        std::vector<std::unique_ptr<Node>> fields;
-
-        ScriptValue(std::vector<std::unique_ptr<Node>> t_fields)
-            : fields(std::move(t_fields)) {}
+              body(std::move(t_body)) {}
     };
 
     struct VarAssignValue
@@ -263,10 +228,8 @@ namespace snowlang
             LeafValue,
             BinOpValue,
             UnOpValue,
-            RangeValue,
-            TypeValue,
             ItemValue,
-            LetValue,
+            DefineValue,
             ConValue,
             ForValue,
             WhileValue,
@@ -278,8 +241,6 @@ namespace snowlang
             FuncDeclValue,
             FuncCallValue,
             ModuleValue,
-            DeclarationsValue,
-            ScriptValue,
             VarAssignValue>;
 
     class Node
@@ -290,9 +251,16 @@ namespace snowlang
         // By default LeafValue
         NodeValueType value;
 
+        int posStart, posEnd;
+
         Node(enum NodeType t_type,
-             NodeValueType t_value)
-            : type(t_type), value(move(t_value)) {}
+             NodeValueType t_value,
+             int t_posStart,
+             int t_posEnd)
+            : type(t_type),
+              value(std::move(t_value)),
+              posStart(t_posStart),
+              posEnd(t_posEnd) {}
 
         static std::string reprNodeType(NodeType nodeType);
     };

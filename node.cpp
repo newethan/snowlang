@@ -10,10 +10,8 @@ namespace snowlang
             "NT_BINOP",
             "NT_UNOP",
             "NT_LEAF",
-            "NT_RANGE",
-            "NT_TYPE",
             "NT_ITEM",
-            "NT_LET",
+            "NT_DEFINE",
             "NT_CON",
             "NT_FOR",
             "NT_WHILE",
@@ -22,11 +20,9 @@ namespace snowlang
             "NT_RETURN",
             "NT_IF",
             "NT_BLOCK",
-            "NT_SCRIPT",
             "NT_FUNCDECL",
             "NT_FUNCCALL",
             "NT_MOD",
-            "NT_DECLARATIONS",
             "NT_VARASSIGN"};
         return reprs[nodeType];
     }
@@ -57,19 +53,6 @@ namespace snowlang
             cout << value.operationToken.repr() << endl;
             printAst(value.node, indent + 1);
         }
-        else if (ast->type == NT_RANGE)
-        {
-            auto &value = std::get<RangeValue>(ast->value);
-            cout << "from , to:" << endl;
-            printAst(value.from, indent + 1);
-            printAst(value.to, indent + 1);
-        }
-        else if (ast->type == NT_TYPE)
-        {
-            auto &value = std::get<TypeValue>(ast->value);
-            cout << "type-iden: " << value.identifier.repr()
-                 << ", size: " << value.arraySize.repr() << endl;
-        }
         else if (ast->type == NT_ITEM)
         {
             auto &value = std::get<ItemValue>(ast->value);
@@ -79,12 +62,12 @@ namespace snowlang
             if (value.next)
                 printAst(value.next, indent + 1);
         }
-        else if (ast->type == NT_LET)
+        else if (ast->type == NT_DEFINE)
         {
-            auto &value = std::get<LetValue>(ast->value);
+            auto &value = std::get<DefineValue>(ast->value);
             cout << "iden: " << value.identifier.repr() << ", ";
-            cout << "type: " << endl;
-            printAst(value.type, indent + 1);
+            cout << "type: " << value.typeName.repr() << ", ";
+            cout << "size: " << value.arraySize.repr() << endl;
         }
         else if (ast->type == NT_CON)
         {
@@ -97,7 +80,8 @@ namespace snowlang
         {
             auto &value = std::get<ForValue>(ast->value);
             cout << "var: " << value.var.repr() << endl;
-            printAst(value.range, indent + 1);
+            printAst(value.from, indent + 1);
+            printAst(value.to, indent + 1);
             printAst(value.block, indent + 1);
         }
         else if (ast->type == NT_WHILE)
@@ -133,38 +117,16 @@ namespace snowlang
         {
             auto &value = std::get<BlockValue>(ast->value);
             cout << endl;
-            for (const auto &inst : value.instructions)
+            for (const auto &inst : value.fields)
             {
                 printAst(inst, indent + 1);
-            }
-        }
-        else if (ast->type == NT_SCRIPT)
-        {
-            auto &value = std::get<ScriptValue>(ast->value);
-            cout << endl;
-            for (const auto &field : value.fields)
-            {
-                printAst(field, indent + 1);
             }
         }
         else if (ast->type == NT_MOD)
         {
             auto &value = std::get<ModuleValue>(ast->value);
             cout << "iden: " << value.identifier.repr() << endl;
-            printAst(value.declarations, indent + 1);
-            printAst(value.block, indent + 1);
-        }
-        else if (ast->type == NT_DECLARATIONS)
-        {
-            auto &value = std::get<DeclarationsValue>(ast->value);
-            cout << endl;
-            for (int i = 0; i < (int)value.types.size(); i++)
-            {
-                printAst(value.types[i], indent + 1);
-                for (int i = 0; i < indent + 1; i++)
-                    cout << indentWith;
-                cout << value.identifiers[i].repr() << endl;
-            }
+            printAst(value.body, indent + 1);
         }
         else if (ast->type == NT_VARASSIGN)
         {
