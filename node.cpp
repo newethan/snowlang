@@ -23,7 +23,10 @@ namespace snowlang
             "NT_FUNCDECL",
             "NT_FUNCCALL",
             "NT_MOD",
-            "NT_VARASSIGN"};
+            "NT_VARASSIGN",
+            "NT_PRINT",
+            "NT_TICK",
+            "NT_HOLD"};
         return reprs[nodeType];
     }
 
@@ -103,7 +106,7 @@ namespace snowlang
         {
             auto &value = std::get<IfValue>(ast->value);
             cout << endl;
-            for (int i = 0; i < (int)value.conds.size(); i++)
+            for (size_t i = 0; i < value.conds.size(); i++)
             {
                 printAst(value.conds[i], indent + 1);
                 printAst(value.ifBlocks[i], indent + 1);

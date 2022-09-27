@@ -1,5 +1,28 @@
+mod arr
+{
+    let or[8] t;
+}
+
 mod Main
 {
-public:
-private:
+    let arr[8] t;
+    for n in (0,6)
+    {
+        con t[n].t t[n+1].t;
+    }
+}
+
+let runtime ()
+{
+    hold t[0].t 10101010 1;
+    for i in (0,7)
+    {
+        for j in (0,7)
+        {
+            print <t[j].t>;
+            print "\n";
+        }
+        print "\n";
+        tick 1;
+    }
 }

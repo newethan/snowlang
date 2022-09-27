@@ -27,6 +27,9 @@ namespace snowlang
         TT_DIV,
         TT_REM,
         TT_MOD, // keywords
+        TT_PRINT,
+        TT_TICK,
+        TT_HOLD,
         TT_LET,
         TT_CON,
         TT_ASSIGN,
@@ -50,12 +53,13 @@ namespace snowlang
         TT_LT,
         TT_FLOAT, // tokens with variable value
         TT_INT,
-        TT_IDEN
+        TT_IDEN,
+        TT_STRLIT
     };
 
     const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap{
         {std::regex("^\\s+"), TT_WHITESPACE},
-        {std::regex("^#.*\n"), TT_COMMENT},
+        {std::regex("^#.*(\n|$)"), TT_COMMENT},
         {std::regex("^\\{"), TT_LBRACE},
         {std::regex("^\\}"), TT_RBRACE},
         {std::regex("^\\["), TT_LBRACK},
@@ -72,6 +76,9 @@ namespace snowlang
         {std::regex("^/"), TT_DIV},
         {std::regex("^%"), TT_REM},
         {std::regex("^mod\\b"), TT_MOD},
+        {std::regex("^print\\b"), TT_PRINT},
+        {std::regex("^tick\\b"), TT_TICK},
+        {std::regex("^hold\\b"), TT_HOLD},
         {std::regex("^let\\b"), TT_LET},
         {std::regex("^con\\b"), TT_CON},
         {std::regex("^=(?!=)"), TT_ASSIGN},
@@ -95,7 +102,8 @@ namespace snowlang
         {std::regex("^<(?!=)"), TT_LT},
         {std::regex("^[0-9]+[.][0-9]+"), TT_FLOAT},
         {std::regex("^\\d+"), TT_INT},
-        {std::regex("^\\w+\\b"), TT_IDEN}};
+        {std::regex("^\\w+\\b"), TT_IDEN},
+        {std::regex("^\".*?\""), TT_STRLIT}};
 
     class Token
     {

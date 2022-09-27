@@ -1,45 +1,29 @@
-let pow(base, exponent) {
-    result = 1;
-    for n in (1, exponent) {
-        result = result * base;
-    }
-    return result;
-}
-
-let modulo(number, modulo) {
-    if number < modulo {
-        return number;
-    }
-    result = number;
-    while result >= modulo {
-        result = result - modulo;
-    }
-    return result;
-}
-
 mod Bitreg {
     # input
-    let or data;
+    let and data;
     let or set;
     let or read;
 
     # ouput
     let and value;
-
+    
+    # memory
     let xor mem;
     con mem mem;
-    let or reset;
-    let and switch_on;
-    let and flip_if_on;
+
+    # reset
+    let and reset;
+    con mem reset;
+    con reset mem; # another gate must be connected to reset.
+
+    # set mem
+    con set data;
+    con data mem;
     con set reset;
-    con reset flip_if_on;
-    con mem flip_if_on;
-    con flip_if_on mem;
-    con set switch_on;
-    con data switch_on;
-    con switch_on mem;
-    con mem value;
+
+    # red mem
     con read value;
+    con mem value;
 }
 
 mod Reg {
@@ -52,7 +36,8 @@ mod Reg {
     let or[8] value;
 
     let Bitreg[8] registers;
-    for n in (0, 7) {
+    for n in (0, 7)
+    {
         con data[n] registers[n].data;
         con set registers[n].set;
         con read registers[n].read;
@@ -70,23 +55,26 @@ mod Multiplexer {
     let nor[8] neg;
     con address neg;
     for n in (0, 7) {
-        for m in (0,255) {
-            # if (modulo(m, pow(2,n)) < pow(2,n) / 2)
-            if (m % 2**n < 2**n / 2) {
+        for m in (0,255)
+        {
+            if (m % 2**n < 2**n / 2)
+            {
                 con address[n] board[m];
             }
-            else {
+            else
+            {
                 con neg[n] board[m];
             }
         }
     }
 }
 
-mod Ram {
+mod Ram
+{
     # input
     let or[8] address;
     let or[8] data;
-    let or write;
+    let or set;
     let or read;
     
     # output
@@ -95,7 +83,9 @@ mod Ram {
     let Multiplexer mult;
     let Reg[256] regs;
     con address mult.address;
-    for n in (0, 255) {
+
+    for n in (0, 255)
+    {
         con set regs[n].set;
         con read regs[n].read;
         con mult.board[n] regs[n].set;
@@ -105,7 +95,41 @@ mod Ram {
     }
 }
 
-mod Main {
+mod Main
+{
+    # let Bitreg br;
+    let xor mem;
+    con mem mem;
+    let or set;
+    con set mem;
+}
 
-    let Ram ram; 
+let runtime()
+{
+    # hold br.data 1 50;
+    # tick 10;
+    # hold br.set 1 1;
+    # tick 10;
+    # hold br.read 1 1;
+    # for i in (0, 10)
+    # {
+    #     tick 1;
+    #     print <br.mem>;
+    #     print "\n";
+    # }
+
+    for i in (1, 10)
+    {
+        tick 1;
+        print <mem>;
+        print "\n";
+    }
+    print "\n";
+    hold set 1 1;
+    for i in (1, 10)
+    {
+        tick 1;
+        print <mem>;
+        print "\n";
+    }
 }

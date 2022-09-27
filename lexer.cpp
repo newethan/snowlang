@@ -40,7 +40,7 @@ namespace snowlang::lexer
     {
         vector<Token> tokens;
         LexState state{text};
-        while (state.pos < (int)text.length())
+        while (state.pos < text.length())
         {
             auto nextToken = generateNextToken(state);
             if (nextToken.type == TT_WHITESPACE ||

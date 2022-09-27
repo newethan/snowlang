@@ -30,15 +30,21 @@ namespace snowlang
             : type(t_type) {}
         LogicGate() = default;
         void generateNextValue();
-        inline void update() { active = m_nextValue; }
+        void update();
         inline void addDependency(LogicGate *dependency)
         {
             m_dependencies.push_back(dependency);
+        }
+        inline void hold(bool value, int holdFor)
+        {
+            active = value;
+            m_holdFor = holdFor;
         }
 
     private:
         std::vector<LogicGate *> m_dependencies;
         bool m_nextValue = false;
+        int m_holdFor = 0;
     };
 
     class Module
@@ -67,7 +73,7 @@ namespace snowlang
             std::vector<std::unique_ptr<Module>>>
             moduleArrays;
 
-        void allGates(std::function<void(LogicGate)> func);
+        void allGates(std::function<void(LogicGate &)> func);
 
         bool alreadyDefined(const std::string &identifier);
     };

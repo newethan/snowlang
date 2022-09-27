@@ -31,6 +31,9 @@ namespace snowlang
             "TT_DIV",
             "TT_REM",
             "TT_MOD",
+            "TT_PRINT",
+            "TT_TICK",
+            "TT_HOLD"
             "TT_LET",
             "TT_CON",
             "TT_ASSIGN",
@@ -54,7 +57,8 @@ namespace snowlang
             "TT_LT",
             "TT_FLOAT",
             "TT_INT",
-            "TT_IDEN"};
+            "TT_IDEN",
+            "TT_STRLIT"};
         return reprs[tokenType];
     }
 

@@ -10,13 +10,10 @@ arithmetic operator precedence:
 
 script
     : (MOD IDEN LBRACE block RBRACE /
-        LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE function_block RBRACE)*
+        LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE block RBRACE)*
     ;
 block
     : (instruction)*
-    ;
-function_block
-    : (function_instruction)*
     ;
 instruction
     : LET IDEN (LBRACK INT RBRACK)? IDEN SEMICOLON
@@ -29,17 +26,9 @@ instruction
     : IF expr LBRACE block RBRACE
         (ELIF expr LBRACE block RBRACE)*
         (ELSE LBRACE block RBRACE)?
-    ;
-function_instruction
-    : IDEN ASSIGN expr SEMICOLON
-    : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE function_block RBRACE
-    : WHILE expr LBRACE block RBRACE
-    : BREAK SEMICOLON
-    : CONTINUE SEMICOLON
-    : IF expr LBRACE function_block RBRACE
-        (ELIF expr LBRACE function_block RBRACE)*
-        (ELSE LBRACE function_block RBRACE)?
-    : RETURN expr SEMICOLON
+    : PRINT (expr|STRLIT|LT item GT) SEMICOLON
+    : TICK expr? SEMICOLON
+    : HOLD item INT expr SEMICOLON
     ;
 item
     : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*

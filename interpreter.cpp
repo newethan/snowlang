@@ -1,167 +1,41 @@
 #include "interpreter.hpp"
+#include <regex>
 
 namespace snowlang::interpreter
 {
-    bool Number::isZero()
+    void Interpreter::interpret()
     {
-        if (holdsInt())
-            return getInt() == 0;
-        else
-            return getFloat() == 0;
-    }
-    Number Number::addOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() + right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() + right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() + right.getInt());
-        else
-            return Number(left.getFloat() + right.getFloat());
-    }
-    Number Number::subOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() - right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() - right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() - right.getInt());
-        else
-            return Number(left.getFloat() - right.getFloat());
-    }
-    Number Number::multOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() * right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() * right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() * right.getInt());
-        else
-            return Number(left.getFloat() * right.getFloat());
-    }
-    Number Number::divOp(Number left, Number right) // Assumes right is not 0
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() / right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() / right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() / right.getInt());
-        else
-            return Number(left.getFloat() / right.getFloat());
-    }
-    Number Number::andOp(Number left, Number right)
-    {
-        if (left.isZero() || right.isZero())
-            return Number(0);
-        else
-            return Number(1);
-    }
-    Number Number::orOp(Number left, Number right)
-    {
-        if (left.isZero() && right.isZero())
-            return Number(0);
-        else
-            return Number(1);
-    }
-    Number Number::gtOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() > right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() > right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() > right.getInt());
-        else
-            return Number(left.getFloat() > right.getFloat());
-    }
-    Number Number::geOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() >= right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() >= right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() >= right.getInt());
-        else
-            return Number(left.getFloat() >= right.getFloat());
-    }
-    Number Number::eqOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() == right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() == right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() == right.getInt());
-        else
-            return Number(left.getFloat() == right.getFloat());
-    }
-    Number Number::neqOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() != right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() != right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() != right.getInt());
-        else
-            return Number(left.getFloat() != right.getFloat());
-    }
-    Number Number::leOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() <= right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() <= right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() <= right.getInt());
-        else
-            return Number(left.getFloat() <= right.getFloat());
-    }
-    Number Number::ltOp(Number left, Number right)
-    {
-        if (left.holdsInt() && right.holdsInt())
-            return Number(left.getInt() < right.getInt());
-        else if (left.holdsInt() && right.holdsFloat())
-            return Number(left.getInt() < right.getFloat());
-        else if (left.holdsFloat() && right.holdsInt())
-            return Number(left.getFloat() < right.getInt());
-        else
-            return Number(left.getFloat() < right.getFloat());
-    }
-
-    void SymbolTable::setSymbol(const std::string &name, SymbolValueType value)
-    {
-        m_symbols[name] = std::move(value);
-    }
-
-    SymbolValueType &SymbolTable::lookup(
-        const std::string &name, int posStart, int posEnd)
-    {
-        for (auto &entry : m_symbols)
-            if (entry.first == name) // names match
-                return entry.second; // return assigned value
-        if (parent)
-            return parent->lookup(name, posStart, posEnd);
-        throw err::SnowlangException(
-            posStart, posEnd, err::IDENTIFIER_UNDEFINED(name));
-    }
-
-    std::unique_ptr<Module> Interpreter::interpret()
-    {
+        // Global symbol table
         SymbolTable globalSymbolTable;
         globalSymbolTable.setSymbol("true", Number(1));
         globalSymbolTable.setSymbol("false", Number(0));
         globalSymbolTable.setSymbol("null", Number(0));
-        auto globalModule = std::make_unique<Module>();
-        Context ctx(globalSymbolTable, *globalModule);
+
+        // Global module - module 'Main' built into it.
+        Module globalModule;
+
+        Context ctx(globalSymbolTable, globalModule);
         visit(m_ast, ctx);
-        buildModule(ctx, "Main", 0, 0);
-        return globalModule;
+
+        // Build module 'Main'.
+        SymbolTable buildSymbolTable(&globalSymbolTable);
+        Context buildCtx(buildSymbolTable, globalModule);
+        buildModule(buildCtx, "Main", 0, 0);
+
+        // Look up runtime function
+        auto &runtimeSymbol =
+            globalSymbolTable.lookup("runtime", 0, 0);
+        if (!std::holds_alternative<FunctionDeclaration>(runtimeSymbol))
+            throw err::SnowlangException(0, 0, err::DOES_NOT_NAME_FUNCTION);
+        auto &runtimeFunction =
+            std::get<FunctionDeclaration>(runtimeSymbol);
+
+        // Execute runtime function
+        SymbolTable runtimeSymbolTable(&globalSymbolTable);
+        Context runtimeCtx(runtimeSymbolTable, globalModule);
+        runtimeCtx.inRuntime = true;
+        runtimeCtx.inFunction = true;
+        visit(runtimeFunction.bodyNode, runtimeCtx);
     };
 
     NodeReturnType Interpreter::buildModule(
@@ -175,7 +49,13 @@ namespace snowlang::interpreter
             throw err::SnowlangException(
                 posStart, posEnd, err::DOES_NOT_NAME_MODULE_TYPE);
         auto &moduleDecl = std::get<ModuleDeclaration>(typeNameSymbol);
+        if (std::count(ctx.buildStack.begin(),
+                       ctx.buildStack.end(), identifier) > 0)
+            throw err::SnowlangException(
+                posStart, posEnd, err::CIRCULAR_CONSTRUCTION);
+        ctx.buildStack.push_back(identifier);
         visit(moduleDecl.body, ctx);
+        ctx.buildStack.pop_back();
         return std::monostate();
     }
 
@@ -216,6 +96,12 @@ namespace snowlang::interpreter
             return visitMod(node, ctx);
         else if (node->type == NT_VARASSIGN)
             return visitVarAssign(node, ctx);
+        else if (node->type == NT_PRINT)
+            return visitPrint(node, ctx);
+        else if (node->type == NT_TICK)
+            return visitTick(node, ctx);
+        else if (node->type == NT_HOLD)
+            return visitHold(node, ctx);
         return std::monostate();
     }
 
@@ -238,6 +124,17 @@ namespace snowlang::interpreter
                     node->posStart,
                     node->posEnd,
                     err::DIV_BY_ZERO);
+            return Number::divOp(left, right);
+        }
+        else if (value.operationToken.type == TT_POW)
+            return Number::powOp(left, right);
+        else if (value.operationToken.type == TT_REM)
+        {
+            if (!left.holdsInt() || !right.holdsInt())
+                throw err::SnowlangException(
+                    node->posStart,
+                    node->posEnd,
+                    err::INT_ONLY_OP);
             return Number::divOp(left, right);
         }
         else if (value.operationToken.type == TT_AND)
@@ -318,8 +215,9 @@ namespace snowlang::interpreter
             auto &currIden = value.identifier.value;
             if (value.index) // current identifier is indexed
             {
+                auto num = visit(value.index, ctx);
                 auto indexNumber = std::get<Number>(
-                    visit(value.index, ctx));
+                    num);
                 if (!indexNumber.holdsInt())
                     throw err::SnowlangException(
                         value.index->posStart, value.index->posEnd,
@@ -333,14 +231,38 @@ namespace snowlang::interpreter
                             value.next->posStart, value.next->posEnd,
                             err::NO_MEMBER_TO_ACCESS);
 
+                    // Check if index is out of bounds
+                    if (index < 0 ||
+                        index >= (int)currModule->gateArrays[currIden].size())
+                    {
+                        throw err::SnowlangException(
+                            value.index->posStart,
+                            value.index->posEnd,
+                            err::INDEX_OUT_OF_BOUNDS(
+                                0,
+                                currModule->gateArrays[currIden].size() - 1,
+                                index));
+                    }
                     return &currModule->gateArrays[currIden][index];
                 }
                 else if (currModule->moduleArrays.count(currIden) > 0)
+                {
+                    if (index < 0 ||
+                        index >= (int)currModule->moduleArrays[currIden].size())
+                    {
+                        throw err::SnowlangException(
+                            value.index->posStart,
+                            value.index->posEnd,
+                            err::INDEX_OUT_OF_BOUNDS(
+                                0,
+                                currModule->moduleArrays[currIden].size() - 1,
+                                index));
+                    }
                     currModule = currModule->moduleArrays[currIden][index].get();
+                }
                 else
                     throw err::SnowlangException(
-                        value.identifier,
-                        err::MEMBER_ARRAY_UNDEFINED);
+                        value.identifier, err::MEMBER_ARRAY_UNDEFINED);
             }
             else // current identifier is not indexed
             {
@@ -362,12 +284,21 @@ namespace snowlang::interpreter
                     return &currModule->gateArrays[currIden];
                 }
                 else if (currModule->modules.count(currIden) > 0)
+                {
                     currModule = currModule->modules[currIden].get();
+                }
                 else if (currModule->moduleArrays.count(currIden) > 0)
+                {
                     if (value.next)
                         throw err::SnowlangException(
                             value.next->posStart, value.next->posEnd,
                             err::NO_MEMBER_TO_ACCESS);
+                }
+                else
+                {
+                    throw err::SnowlangException(
+                        value.identifier, err::MEMBER_UNDEFINED);
+                }
             }
             item = value.next.get();
         }
@@ -378,6 +309,10 @@ namespace snowlang::interpreter
     NodeReturnType Interpreter::visitDefine(
         std::unique_ptr<Node> &node, Context &ctx)
     {
+        if (ctx.inFunction)
+            throw err::SnowlangException(
+                node->posStart, node->posEnd,
+                err::LOGIC_INSIDE_FUNCTION);
         auto &value = std::get<DefineValue>(node->value);
         auto &typeName = value.typeName.value;
         auto &identifier = value.identifier.value;
@@ -410,6 +345,7 @@ namespace snowlang::interpreter
                 auto newMod = std::make_unique<Module>();
                 auto newSymbolTable = SymbolTable(&ctx.symbolTable);
                 Context newCtx(newSymbolTable, *newMod);
+                newCtx.copyModuleCtx(ctx);
                 buildModule(
                     newCtx, typeName, value.typeName.tokenStart,
                     value.typeName.tokenEnd);
@@ -418,6 +354,9 @@ namespace snowlang::interpreter
         }
         else // type is array
         {
+            // size is 0 or positive because value.arraySize is an integer
+            // token. having a 0-sized array does not cause undefined
+            // behavior.
             int size = std::stoi(value.arraySize.value);
             if (isGate)
             {
@@ -432,6 +371,7 @@ namespace snowlang::interpreter
                     auto newMod = std::make_unique<Module>();
                     auto newSymbolTable = SymbolTable(&ctx.symbolTable);
                     Context newCtx(newSymbolTable, *newMod);
+                    newCtx.copyModuleCtx(ctx);
                     buildModule(
                         newCtx,
                         value.typeName.value,
@@ -448,13 +388,17 @@ namespace snowlang::interpreter
     NodeReturnType Interpreter::visitCon(
         std::unique_ptr<Node> &node, Context &ctx)
     {
+        if (ctx.inFunction)
+            throw err::SnowlangException(
+                node->posStart, node->posEnd,
+                err::LOGIC_INSIDE_FUNCTION);
         auto &value = std::get<ConValue>(node->value);
         auto left = visit(value.left, ctx);
         auto right = visit(value.right, ctx);
         bool leftIsArray =
-            std::holds_alternative<LogicGate *>(left);
+            std::holds_alternative<std::vector<LogicGate> *>(left);
         bool rightIsArray =
-            std::holds_alternative<LogicGate *>(left);
+            std::holds_alternative<std::vector<LogicGate> *>(right);
         if (!leftIsArray && !rightIsArray)
         {
             auto leftGate = std::get<LogicGate *>(left);
@@ -469,7 +413,7 @@ namespace snowlang::interpreter
                 throw err::SnowlangException(
                     node->posStart, node->posEnd,
                     err::CONNECT_ARRAY_TO_DIFF_SIZED_ARRAY);
-            for (int i = 0; i < (int)rightArray->size(); i++)
+            for (size_t i = 0; i < rightArray->size(); i++)
                 (*rightArray)[i].addDependency(&(*leftArray)[i]);
         }
         else
@@ -480,24 +424,178 @@ namespace snowlang::interpreter
         }
         return std::monostate();
     }
+
     NodeReturnType Interpreter::visitFor(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<ForValue>(node->value);
+
+        Number from = std::get<Number>(visit(value.from, ctx));
+        if (!from.holdsInt())
+            throw err::SnowlangException(
+                value.from->posStart, value.from->posEnd,
+                err::RANGE_BOUND_MUST_BE_INTEGER);
+        Number to = std::get<Number>(visit(value.to, ctx));
+        if (!from.holdsInt())
+            throw err::SnowlangException(
+                value.to->posStart, value.to->posEnd,
+                err::RANGE_BOUND_MUST_BE_INTEGER);
+        if (from.getInt() > to.getInt())
+            throw err::SnowlangException(
+                value.from->posStart, value.to->posEnd,
+                err::LOWER_BOUND_GT_UPPER_BOUND);
+
+        Number var(from);
+
+        while (var.getInt() <= to.getInt())
+        {
+            // child symbol table with variable as symbol
+            SymbolTable newSymbolTable(&ctx.symbolTable);
+            newSymbolTable.setSymbol(value.var.value, var);
+            Context newCtx(newSymbolTable, ctx.logic);
+            newCtx.copyCtxInfo(ctx);
+            newCtx.copyModuleCtx(ctx);
+            newCtx.inLoop = true;
+
+            visit(value.block, newCtx); // execute body
+
+            if (newCtx.shouldBreak) // encountered break statement
+                break;
+            else if (newCtx.shouldReturn)
+            {
+                ctx.returnValue = newCtx.returnValue;
+                ctx.shouldReturn = true;
+                break;
+            }
+
+            var = Number(var.getInt() + 1); // increment variable
+        }
+
+        return std::monostate();
+    }
+
     NodeReturnType Interpreter::visitWhile(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<WhileValue>(node->value);
+
+        while (!std::get<Number>(visit(value.cond, ctx)).isZero())
+        {
+            // child symbol table with variable as symbol
+            SymbolTable newSymbolTable(&ctx.symbolTable);
+            Context newCtx(newSymbolTable, ctx.logic);
+            newCtx.copyCtxInfo(ctx);
+            newCtx.copyModuleCtx(ctx);
+            newCtx.inLoop = true;
+
+            visit(value.block, newCtx); // execute body
+
+            if (newCtx.shouldBreak) // encountered break statement
+                break;
+            else if (newCtx.shouldReturn)
+            {
+                ctx.returnValue = newCtx.returnValue;
+                ctx.shouldReturn = true;
+                break;
+            }
+        }
+
+        return std::monostate();
+    }
+
     NodeReturnType Interpreter::visitBreak(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        if (!ctx.inLoop)
+            throw err::SnowlangException(
+                node->posStart, node->posEnd,
+                err::BREAK_CONTINUE_OUTSIDE_LOOP);
+        ctx.shouldBreak = true;
+        return std::monostate();
+    }
+
     NodeReturnType Interpreter::visitContinue(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        if (!ctx.inLoop)
+            throw err::SnowlangException(
+                node->posStart, node->posEnd,
+                err::BREAK_CONTINUE_OUTSIDE_LOOP);
+        ctx.shouldContinue = true;
+        return std::monostate();
+    }
+
     NodeReturnType Interpreter::visitReturn(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<ReturnValue>(node->value);
+        if (!ctx.inFunction)
+            throw err::SnowlangException(
+                node->posStart, node->posEnd,
+                err::RETURN_OUTSIDE_FUNCTION);
+        ctx.shouldReturn = true;
+        ctx.returnValue = std::get<Number>(visit(value.expression, ctx));
+        return std::monostate();
+    }
+
     NodeReturnType Interpreter::visitIf(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<IfValue>(node->value);
+        size_t blockIndex = 0;
+
+        // figure out the index of the block whose condition
+        // evaluates to true
+        for (; blockIndex < value.conds.size(); blockIndex++)
+        {
+            auto condValue =
+                std::get<Number>(visit(value.conds[blockIndex], ctx));
+            if (!condValue.isZero()) // condition evaluates to true
+                break;
+        }
+        if (blockIndex == value.conds.size())
+        { // all conditions evaluated to false.
+            if (value.ifBlocks.size() > value.conds.size())
+            {
+                // there are more blocks than conditions. i.e. there's
+                // an else block - execute it.
+
+                // child symbol table to current one
+                SymbolTable newSymbolTable(&ctx.symbolTable);
+                Context newCtx(newSymbolTable, ctx.logic);
+                newCtx.copyCtxInfo(ctx);
+                newCtx.copyModuleCtx(ctx);
+
+                // value.ifBlocks has an else block, therefore it isn't
+                // empty and value.ifBlocks.back() is defined behavior
+                visit(value.ifBlocks.back(), newCtx);
+                ctx.copyInfoToForward(newCtx);
+            }
+        }
+        else // one of the conditions evalutated to true
+        {
+            // child symbol table to current one
+            SymbolTable newSymbolTable(&ctx.symbolTable);
+            Context newCtx(newSymbolTable, ctx.logic);
+            newCtx.copyCtxInfo(ctx);
+            newCtx.copyModuleCtx(ctx);
+            visit(value.ifBlocks[blockIndex], newCtx);
+            ctx.copyInfoToForward(newCtx);
+        }
+
+        return std::monostate();
+    }
+
     NodeReturnType Interpreter::visitBlock(
         std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<BlockValue>(node->value);
         for (auto &field : value.fields)
+        {
             visit(field, ctx);
+            if (ctx.shouldContinue || ctx.shouldBreak || ctx.shouldReturn)
+                break;
+        }
         return std::monostate();
     }
 
@@ -513,8 +611,43 @@ namespace snowlang::interpreter
             FunctionDeclaration(args, std::move(value.body)));
         return std::monostate();
     }
+
     NodeReturnType Interpreter::visitFuncCall(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<FuncCallValue>(node->value);
+        auto &funcDeclSymbol = ctx.symbolTable.lookup(
+            value.identifier.value,
+            value.identifier.tokenStart,
+            value.identifier.tokenEnd);
+        if (!std::holds_alternative<FunctionDeclaration>(
+                funcDeclSymbol))
+            throw err::SnowlangException(
+                value.identifier, err::DOES_NOT_NAME_FUNCTION);
+        auto &funcDecl = std::get<FunctionDeclaration>(funcDeclSymbol);
+
+        // Check number of args
+        if (value.args.size() != funcDecl.args.size())
+            throw err::SnowlangException(
+                node->posStart, node->posEnd,
+                err::WRONG_ARG_NUM(
+                    funcDecl.args.size(),
+                    value.args.size()));
+
+        // Populate arguments in child symbolTable
+        SymbolTable newSymbolTable(ctx.symbolTable.firstAncestor());
+        for (size_t i = 0; i < value.args.size(); i++)
+            newSymbolTable.setSymbol(
+                funcDecl.args[i],
+                std::get<Number>(visit(value.args[i], ctx)));
+        Context newCtx(newSymbolTable, ctx.logic);
+        newCtx.copyModuleCtx(ctx);
+        newCtx.inFunction = true;
+        visit(funcDecl.bodyNode, newCtx);
+        auto returnValue = newCtx.returnValue;
+        return returnValue;
+    }
+
     NodeReturnType Interpreter::visitMod(
         std::unique_ptr<Node> &node, Context &ctx)
     {
@@ -524,6 +657,175 @@ namespace snowlang::interpreter
             ModuleDeclaration(std::move(value.body)));
         return std::monostate();
     }
+
     NodeReturnType Interpreter::visitVarAssign(
-        std::unique_ptr<Node> &node, Context &ctx) {}
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<VarAssignValue>(node->value);
+        auto symbolValue = std::get<Number>(visit(value.expression, ctx));
+        ctx.symbolTable.setSymbol(value.identifier.value, symbolValue);
+        return std::monostate();
+    }
+
+    NodeReturnType Interpreter::visitPrint(
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<PrintValue>(node->value);
+        if (value.strlit.type != TT_NULL) // print string literals
+        {
+            std::string temp(value.strlit.value);
+            temp = temp.substr(1, temp.length() - 2);
+
+            // Basic escape sequqneces
+            for (size_t i = 0; i < temp.length(); i++)
+                if (temp[i] == '\\' && i + 1 < temp.length())
+                {
+                    if (temp[i + 1] == 'n')
+                    {
+                        temp[i] = '\n';
+                        temp.erase(i + 1, 1);
+                    }
+                    else if (temp[i + 1] == 't')
+                    {
+                        temp[i] = '\t';
+                        temp.erase(i + 1, 1);
+                    }
+                    else
+                    {
+                        temp[i] = temp[i + 1];
+                        temp.erase(i + 1, 1);
+                    }
+                }
+            std::cout << temp;
+        }
+        else if (value.isExpression) // print expression
+        {
+            auto expression =
+                std::get<Number>(visit(value.expressionOrItem, ctx));
+            if (expression.holdsInt())
+                std::cout << expression.getInt();
+            else if (expression.holdsFloat())
+                std::cout << expression.getFloat();
+        }
+        else // print item
+        {
+            if (ctx.inFunction && !ctx.inRuntime)
+                throw err::SnowlangException(
+                    node->posStart, node->posEnd,
+                    err::LOGIC_INSIDE_FUNCTION);
+            auto itemValue = visit(value.expressionOrItem, ctx);
+            if (std::holds_alternative<LogicGate *>(itemValue)) // item is gate
+            {
+                auto gate = std::get<LogicGate *>(itemValue);
+                if (gate->active)
+                    std::cout << "1";
+                else
+                    std::cout << "0";
+            }
+            else // item is gate array
+            {
+                auto gateArray = std::get<std::vector<LogicGate> *>(itemValue);
+                for (auto &gate : *gateArray)
+                {
+                    if (gate.active)
+                        std::cout << "1";
+                    else
+                        std::cout << "0";
+                }
+            }
+        }
+        return std::monostate();
+    }
+
+    NodeReturnType Interpreter::visitTick(
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        if (!ctx.inRuntime)
+            throw err::SnowlangException(
+                node->posStart, node->posEnd, err::TICK_HOLD_OUTSIDE_RUNTIME);
+        auto &value = std::get<TickValue>(node->value);
+
+        // Make sure the number of ticks is a positive integer.
+        Number tickNumber = std::get<Number>(visit(value.expression, ctx));
+        if (!tickNumber.holdsInt() || tickNumber.getInt() <= 0)
+            throw err::SnowlangException(
+                value.expression->posStart,
+                value.expression->posEnd,
+                err::EXPECTED_POS_INT_TICKS);
+        size_t ticks = tickNumber.getInt();
+
+        // Update all gates
+        for (size_t i = 0; i < ticks; i++)
+        {
+            ctx.logic.allGates([](LogicGate &g)
+                               { g.generateNextValue(); });
+            ctx.logic.allGates([](LogicGate &g)
+                               { g.update(); });
+        }
+        return std::monostate();
+    }
+
+    NodeReturnType Interpreter::visitHold(
+        std::unique_ptr<Node> &node, Context &ctx)
+    {
+        auto &value = std::get<HoldValue>(node->value);
+
+        auto item = visit(value.item, ctx);
+
+        Number tickNumber = std::get<Number>(visit(value.holdFor, ctx));
+        if (!tickNumber.holdsInt() || tickNumber.getInt() <= 0)
+            throw err::SnowlangException(
+                value.holdFor->posStart,
+                value.holdFor->posEnd,
+                err::EXPECTED_POS_INT_TICKS);
+        int ticks = tickNumber.getInt();
+
+        if (std::holds_alternative<LogicGate *>(item)) // item is gate
+        {
+            auto gate = std::get<LogicGate *>(item); // The gate
+
+            // Make sure size of object value is matches size of array
+            // (in this case single object)
+            if (value.holdAs.value.size() != 1)
+                throw err::SnowlangException(
+                    value.holdAs,
+                    err::ITEM_VALUE_WRONG_SIZE(1, value.holdAs.value.size()));
+
+            // Set value
+            if (value.holdAs.value[0] == '0')
+                gate->hold(false, ticks);
+            else if (value.holdAs.value[0] == '1')
+                gate->hold(true, ticks);
+            else
+                throw err::SnowlangException(
+                    value.holdAs,
+                    err::OBJECT_VALUE_ONE_OR_ZERO);
+        }
+        else // item is array of gates
+        {
+            auto gateArray = std::get<std::vector<LogicGate> *>(item);
+
+            // Make sure size of object value is matches size of array
+            if (value.holdAs.value.size() != gateArray->size())
+                throw err::SnowlangException(
+                    value.holdAs,
+                    err::ITEM_VALUE_WRONG_SIZE(
+                        gateArray->size(),
+                        value.holdAs.value.size()));
+
+            // Set value for each gate in array
+            for (size_t i = 0; i < value.holdAs.value.size(); i++)
+            {
+                if (value.holdAs.value[i] == '0')
+                    (*gateArray)[i].hold(false, ticks);
+                else if (value.holdAs.value[i] == '1')
+                    (*gateArray)[i].hold(true, ticks);
+                else
+                    throw err::SnowlangException(
+                        value.holdAs,
+                        err::OBJECT_VALUE_ONE_OR_ZERO);
+            }
+        }
+        return std::monostate();
+    }
 }

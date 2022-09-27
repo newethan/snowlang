@@ -76,7 +76,7 @@ namespace snowlang::parser
                 }
                 accept(TT_RPAREN, err::EXPECTED_RPAREN);
                 accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                auto body = functionBlock();
+                auto body = block();
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
                 int posEnd = accepted().tokenEnd;
 
@@ -99,30 +99,12 @@ namespace snowlang::parser
     unique_ptr<Node> Parser::block()
     {
         vector<unique_ptr<Node>> instructions;
-        while (accept({TT_LET, TT_CON, TT_IDEN, TT_FOR,
-                       TT_WHILE, TT_BREAK, TT_CONTINUE, TT_IF}))
+        while (accept(
+            {TT_LET, TT_CON, TT_IDEN, TT_FOR, TT_WHILE,
+             TT_BREAK, TT_CONTINUE, TT_IF, TT_RETURN,
+             TT_PRINT, TT_TICK, TT_HOLD}))
         {
             instructions.push_back(instruction());
-        }
-        int posStart = 0, posEnd = 0;
-        if (!instructions.empty()) // avoid undefined behavior
-        {
-            posStart = instructions.front()->posStart;
-            posEnd = instructions.back()->posEnd;
-        }
-        return make_unique<Node>(
-            NT_BLOCK,
-            BlockValue(move(instructions)),
-            posStart, posEnd);
-    }
-
-    unique_ptr<Node> Parser::functionBlock()
-    {
-        vector<unique_ptr<Node>> instructions;
-        while (accept({TT_IDEN, TT_FOR, TT_WHILE, TT_BREAK,
-                       TT_CONTINUE, TT_RETURN, TT_IF}))
-        {
-            instructions.push_back(functionInstruction());
         }
         int posStart = 0, posEnd = 0;
         if (!instructions.empty()) // avoid undefined behavior
@@ -250,105 +232,68 @@ namespace snowlang::parser
                 IfValue(move(conds), move(ifBlocks)),
                 posStart, posEnd);
         }
-        throw err::SnowlangException(
-            current(),
-            err::EXPECTED_FIRST_OF_INSTRUCTION);
-    }
-
-    unique_ptr<Node> Parser::functionInstruction()
-    {
-        int posStart = accepted().tokenStart;
-        if (accepted().type == TT_IDEN)
-        {
-            auto identifier = accepted();
-            accept(TT_ASSIGN, err::EXPECTED_ASSIGN);
-            auto expression = expr();
-            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
-            return make_unique<Node>(
-                NT_VARASSIGN,
-                VarAssignValue(identifier, move(expression)),
-                posStart, posEnd);
-        }
-        else if (accepted().type == TT_FOR)
-        {
-            accept(TT_IDEN, err::EXPECTED_IDEN);
-            auto var = accepted();
-            accept(TT_IN, err::EXPECTED_IN);
-            accept(TT_LPAREN, err::EXPECTED_LPAREN);
-            auto from = expr();
-            accept(TT_COMMA, err::EXPECTED_COMMA);
-            auto to = expr();
-            accept(TT_RPAREN, err::EXPECTED_RPAREN);
-            accept(TT_LBRACE, err::EXPECTED_LBRACE);
-            auto blockNode = functionBlock();
-            accept(TT_RBRACE, err::EXPECTED_RBRACE);
-            int posEnd = accepted().tokenEnd;
-            return make_unique<Node>(
-                NT_FOR,
-                ForValue(var, move(from), move(to), move(blockNode)),
-                posStart, posEnd);
-        }
-        else if (accepted().type == TT_WHILE)
-        {
-            auto cond = expr();
-            accept(TT_LBRACE, err::EXPECTED_LBRACE);
-            auto blockNode = functionBlock();
-            accept(TT_RBRACE, err::EXPECTED_RBRACE);
-            int posEnd = accepted().tokenEnd;
-            return make_unique<Node>(
-                NT_WHILE,
-                WhileValue(move(cond), move(blockNode)),
-                posStart, posEnd);
-        }
-        else if (accepted().type == TT_BREAK)
-        {
-            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
-            return make_unique<Node>(
-                NT_BREAK, BreakValue(), posStart, posEnd);
-        }
-        else if (accepted().type == TT_CONTINUE)
-        {
-            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
-            return make_unique<Node>(
-                NT_CONTINUE, ContinueValue(), posStart, posEnd);
-        }
         else if (accepted().type == TT_RETURN)
         {
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
             int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
-                NT_RETURN,
-                ReturnValue(move(expression)), posStart, posEnd);
+                NT_RETURN, ReturnValue(move(expression)),
+                posStart, posEnd);
         }
-        else if (accepted().type == TT_IF)
+        else if (accepted().type == TT_PRINT)
         {
-            vector<unique_ptr<Node>> conds;
-            vector<unique_ptr<Node>> ifBlocks;
-            do
+            if (accept(TT_STRLIT))
             {
-                conds.push_back(expr());
-                accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                ifBlocks.push_back(functionBlock());
-                accept(TT_RBRACE, err::EXPECTED_RBRACE);
-            } while (accept(TT_ELIF));
-            if (accept(TT_ELSE))
-            {
-                accept(TT_LBRACE, err::EXPECTED_LBRACE);
-                ifBlocks.push_back(functionBlock());
-                accept(TT_RBRACE, err::EXPECTED_RBRACE);
+                auto strlit = accepted();
+                accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+                int posEnd = accepted().tokenEnd;
+                return make_unique<Node>(
+                    NT_PRINT, PrintValue(strlit), posStart, posEnd);
             }
+            else if (accept(TT_LT))
+            {
+                auto itemToPrint = item();
+                accept(TT_GT, err::EXPECTED_GT);
+                accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+                int posEnd = accepted().tokenEnd;
+                return make_unique<Node>(
+                    NT_PRINT,
+                    PrintValue(move(itemToPrint), false),
+                    posStart, posEnd);
+            }
+            auto expression = expr();
+            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
             int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
-                NT_IF,
-                IfValue(move(conds), move(ifBlocks)), posStart, posEnd);
+                NT_PRINT,
+                PrintValue(move(expression), true),
+                posStart, posEnd);
+        }
+        else if (accepted().type == TT_TICK)
+        {
+            auto expression = expr();
+            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
+            return make_unique<Node>(
+                NT_TICK,
+                TickValue(move(expression)), posStart, posEnd);
+        }
+        else if (accepted().type == TT_HOLD)
+        {
+            auto itemNode = item();
+            accept(TT_INT, err::EXPECTED_INT);
+            auto holdAs = accepted();
+            auto holdFor = expr();
+            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().tokenEnd;
+            return make_unique<Node>(
+                NT_HOLD, HoldValue(move(itemNode), move(holdFor), holdAs),
+                posStart, posEnd);
         }
         throw err::SnowlangException(
             current(),
-            err::EXPECTED_FIRST_OF_FUNCTION_INSTRUCTION);
+            err::EXPECTED_FIRST_OF_INSTRUCTION);
     }
 
     unique_ptr<Node> Parser::item()
@@ -496,7 +441,7 @@ namespace snowlang::parser
     unique_ptr<Node> Parser::parse()
     {
         auto res = script();
-        if (pos < (int)tokens.size() - 1)
+        if (pos < tokens.size() - 1)
             throw err::SnowlangException(current(), err::EXPECTED_EOI);
         return res;
     }

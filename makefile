@@ -1,5 +1,5 @@
-snowlang: main.o lexer.o token.o parser.o node.o errorHandler.o logic.o interpreter.o
-	g++ main.o lexer.o token.o parser.o node.o errorHandler.o logic.o interpreter.o -o snowlang -Wall -pedantic -g
+snowlang: main.o lexer.o token.o parser.o node.o errorHandler.o logic.o interpreter.o symbol.o
+	g++ main.o lexer.o token.o parser.o node.o errorHandler.o logic.o interpreter.o symbol.o -o snowlang -Wall -pedantic -g
 
 main.o: main.cpp lexer.hpp parser.hpp node.hpp errorHandler.hpp
 	g++ -c main.cpp -Wall -pedantic -g
@@ -24,6 +24,9 @@ logic.o: logic.cpp logic.hpp
 
 interpreter.o: interpreter.cpp interpreter.hpp node.hpp logic.hpp errorHandler.hpp
 	g++ -c interpreter.cpp -Wall -pedantic -g
+
+symbol.o: symbol.cpp symbol.hpp node.hpp errorHandler.hpp
+	g++ -c symbol.cpp -Wall -pedantic -g
 
 clean:
 	rm *.o snowlang

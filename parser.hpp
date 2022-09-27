@@ -9,7 +9,7 @@ namespace snowlang::parser
     struct Parser
     {
         const std::vector<Token> &tokens;
-        int pos = 0;
+        size_t pos = 0;
 
         Parser(const std::vector<Token> &t_tokens)
             : tokens(t_tokens) {}
@@ -45,9 +45,7 @@ namespace snowlang::parser
         Token m_acceptedToken;
         std::unique_ptr<Node> script();
         std::unique_ptr<Node> block();
-        std::unique_ptr<Node> functionBlock();
         std::unique_ptr<Node> instruction();
-        std::unique_ptr<Node> functionInstruction();
         std::unique_ptr<Node> item();
         std::unique_ptr<Node> expr();
         std::unique_ptr<Node> orExpr();

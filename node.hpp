@@ -27,7 +27,10 @@ namespace snowlang
         NT_FUNCDECL,
         NT_FUNCCALL,
         NT_MOD,
-        NT_VARASSIGN
+        NT_VARASSIGN,
+        NT_PRINT,
+        NT_TICK,
+        NT_HOLD
     };
 
     /////////////// value structs
@@ -222,26 +225,53 @@ namespace snowlang
               expression(std::move(t_expression)) {}
     };
 
+    struct PrintValue
+    {
+        Token strlit;
+        std::unique_ptr<Node> expressionOrItem{nullptr};
+        bool isExpression{false};
+        bool isItem{false};
+
+        PrintValue(Token t_strlit) : strlit(t_strlit) {}
+
+        PrintValue(std::unique_ptr<Node> t_expressionOrItem,
+                   bool t_isExpression)
+            : expressionOrItem(std::move(t_expressionOrItem)),
+              isExpression(t_isExpression), isItem(!isExpression) {}
+    };
+
+    struct TickValue
+    {
+        std::unique_ptr<Node> expression;
+
+        TickValue(std::unique_ptr<Node> t_expression)
+            : expression(std::move(t_expression)) {}
+    };
+
+    struct HoldValue
+    {
+        std::unique_ptr<Node> item;
+        std::unique_ptr<Node> holdFor;
+        Token holdAs;
+
+        HoldValue(std::unique_ptr<Node> t_item,
+                  std::unique_ptr<Node> t_holdFor,
+                  Token t_holdAs)
+            : item(std::move(t_item)),
+              holdFor(std::move(t_holdFor)),
+              holdAs(t_holdAs) {}
+    };
+
     ///////////////
     using NodeValueType =
         std::variant<
-            LeafValue,
-            BinOpValue,
-            UnOpValue,
-            ItemValue,
-            DefineValue,
-            ConValue,
-            ForValue,
-            WhileValue,
-            BreakValue,
-            ContinueValue,
-            ReturnValue,
-            IfValue,
-            BlockValue,
-            FuncDeclValue,
-            FuncCallValue,
+            LeafValue, BinOpValue, UnOpValue,
+            ItemValue, DefineValue, ConValue,
+            ForValue, WhileValue, BreakValue, ContinueValue,
+            IfValue, VarAssignValue, BlockValue,
+            FuncDeclValue, FuncCallValue, ReturnValue,
             ModuleValue,
-            VarAssignValue>;
+            PrintValue, TickValue, HoldValue>;
 
     class Node
     {

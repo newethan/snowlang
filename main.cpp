@@ -30,43 +30,16 @@ int main(int argc, char *argv[])
     buf << file.rdbuf();
     string text = buf.str();
 
-    vector<Token> tokens;
     try
     {
-        tokens = lexer::lex(text);
-    }
-    catch (err::SnowlangException &e)
-    {
-        err::fatalErrorAbort(
-            text,
-            filename,
-            e.posStart,
-            e.posEnd,
-            e.message);
-    }
-    // for (auto &token : tokens)
-    //     cout << token.repr() << endl;
-    unique_ptr<Node> ast;
-    try
-    {
+        auto tokens = lexer::lex(text);
+        // for (auto &token : tokens)
+        //     cout << token.repr() << endl;
         parser::Parser p(tokens);
-        ast = p.parse();
-    }
-    catch (err::SnowlangException &e)
-    {
-        err::fatalErrorAbort(
-            text,
-            filename,
-            e.posStart,
-            e.posEnd,
-            e.message);
-    }
-    // printAst(ast);
-
-    interpreter::Interpreter i(move(ast));
-    try
-    {
-        auto mainMod = i.interpret();
+        auto ast = p.parse();
+        // printAst(ast);
+        interpreter::Interpreter i(move(ast));
+        i.interpret();
     }
     catch (err::SnowlangException &e)
     {
