@@ -4,13 +4,24 @@ namespace snowlang
 {
     void LogicGate::update()
     {
-        if (--m_holdFor > 0)
-            return;
+        if (m_holdFor > 0)
+        {
+            m_holdFor--;
+            if (m_holdFor > 0)
+                return;
+        }
         active = m_nextValue;
     }
 
     void LogicGate::generateNextValue()
     {
+        // default behavior if no gates connected
+        if (m_dependencies.size() == 0)
+        {
+            m_nextValue = false;
+            return;
+        }
+
         size_t activeGates = 0;
         for (auto &gate : m_dependencies)
             if (gate->active)
