@@ -1,62 +1,19 @@
 mod Main
 {
-    let xor[8] mem;
-    # let and[8] reset;
-    let and[8] data;
-    let or[8] u_data;
-    let and set;
-    let and read;
-    let and[8] out;
-
-    con mem mem;
-    con u_data data;
-    con data mem;
-    for i in (0,7)
+    let or[8] t;
+    let or r;
+    let and a;
+    for i in (0, 7)
     {
-        con set data[i];
-        # con set reset[i];
+        con t[i] a;
     }
-    # con mem reset;
-    # con reset mem;
-
+    con r a;
 }
 
 let runtime ()
 {
-    hold u_data 11100111 1;
-    hold set 1 1;
+    hold t 11111111 100;
+    hold r 1 100;
     tick 1;
-    print "set = ";
-    print <set>;
-    print "\n";
-
-    print "data = ";
-    print <data>;
-    print "\n";
-    print "set = ";
-    print <set>;
-    print "\n";
-    tick 1;
-    print "data = ";
-    print <data>;
-    print "\n";
-    print "set = ";
-    print <set>;
-    print "\n";
-
-    tick 10;
-    print <mem>;
-    print "\n";
-    tick 1;
-    print <mem>;
-    print "\n";
-    tick 1;
-    print <mem>;
-    print "\n";
-    # hold u_data 00011000 100;
-    # tick 1;
-    # hold set 1 1;
-    # tick 10;
-    # print <mem>;
-    # print "\n";
+    print <a>;
 }

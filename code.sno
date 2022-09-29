@@ -1,69 +1,79 @@
-mod Bitreg {
+mod Reg
+{
     # input
-    let and data;
-    let or set;
-    let or read;
-
-    # ouput
-    let and value;
-    
-    # memory
-    let xor mem;
-    con mem mem;
-
-    # reset
-    let and reset;
-    con mem reset;
-    con reset mem; # another gate must be connected to reset.
-
-    # set mem
-    con set data;
-    con data mem;
-    con set reset;
-
-    # red mem
-    con read value;
-    con mem value;
-}
-
-mod Reg {
-    # input
-    let or[8] data;
+    let and[8] data;
     let and set;
     let and read;
 
-    #output
-    let or[8] value;
+    # output
+    let and[8] out;
 
-    let Bitreg[8] registers;
-    for n in (0, 7)
+    # memory
+    let xor[8] mem;
+    con mem mem;
+
+    # reset
+    let and[8] reset;
+    con mem reset;
+    con reset mem;
+
+    # set
+    con data mem;
+    for i in (0, 7)
     {
-        con data[n] registers[n].data;
-        con set registers[n].set;
-        con read registers[n].read;
-        con registers[n].value value[n];
+        con set data[i];
+        con set reset[i];
+    }
+
+    # read
+    con mem out;
+    for i in (0, 7)
+    {
+        con read out[i];
     }
 }
 
-mod Multiplexer {
+mod Multiplexer
+{
     # input
     let or[8] address;
 
     # output
     let and[256] board;
 
+    # negate address
     let nor[8] neg;
     con address neg;
-    for n in (0, 7) {
-        for m in (0,255)
+
+    for m in (0,255)
+    {
+        for n in (0, 7)
         {
-            if (m % 2**n < 2**n / 2)
+            if m % 2**(n+1) < 2**(n+1) / 2
             {
-                con address[n] board[m];
+                print "cell ";
+                print m;
+                print " bit ";
+                print n;
+                print " neg: ";
+                print m % 2**(n+1);
+                print " < ";
+                print 2**(n+1) / 2;
+                print ".\n";
+                con neg[7 - n] board[m];
             }
             else
             {
-                con neg[n] board[m];
+                print "cell ";
+                print m;
+                print " bit ";
+                print n;
+                print " non-neg: ";
+                print m % 2**(n+1);
+                print " >= ";
+                print 2**(n+1) / 2;
+                print ".\n";
+                con address[7 - n] board[m];
             }
         }
     }
@@ -90,46 +100,43 @@ mod Ram
         con read regs[n].read;
         con mult.board[n] regs[n].set;
         con mult.board[n] regs[n].read;
-        con regs[n].value out;
+        con regs[n].out out;
         con data regs[n].data;
     }
 }
 
 mod Main
 {
-    # let Bitreg br;
-    let xor mem;
-    con mem mem;
-    let or set;
-    con set mem;
+    #let Ram ram;
+    #let or[8] u_address;
+    #let or[8] u_data;
+    #let or u_set;
+    #let or u_read;
+
+    #con u_address ram.address;
+    #con u_data ram.data;
+    #con u_set ram.set;
+    #con u_read ram.read;
+
+    let Multiplexer m;
 }
 
 let runtime()
 {
-    # hold br.data 1 50;
+    # hold u_address 00000101 100;
+    # hold u_data 11100111 100;
     # tick 10;
-    # hold br.set 1 1;
+    # hold u_set 1 1;
     # tick 10;
-    # hold br.read 1 1;
-    # for i in (0, 10)
-    # {
-    #     tick 1;
-    #     print <br.mem>;
-    #     print "\n";
-    # }
+    # print <ram.regs[5].mem>;
+    # print "\n";
 
-    for i in (1, 10)
-    {
-        tick 1;
-        print <mem>;
-        print "\n";
-    }
+    hold m.address 00000101 100;
+    tick 10;
+    print <m.address>;
     print "\n";
-    hold set 1 1;
-    for i in (1, 10)
-    {
-        tick 1;
-        print <mem>;
-        print "\n";
-    }
+    print <m.neg>;
+    print "\n";
+    print <m.board>;
+    print "\n";
 }

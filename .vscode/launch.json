@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/snowlang",
-            "args": ["/home/north/Desktop/projects/snowlang/new.sno"],
+            "args": ["/home/north/Desktop/projects/snowlang/code.sno"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

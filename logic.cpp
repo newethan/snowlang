@@ -40,18 +40,32 @@ namespace snowlang
             m_nextValue = (activeGates % 2 == 0);
     }
 
-    void Module::allGates(std::function<void(LogicGate &)> func)
+    void Module::generateNextValue()
     {
         for (auto &gate : gates)
-            func(gate.second);
+            gate.second.generateNextValue();
         for (auto &gateArray : gateArrays)
             for (auto &gate : gateArray.second)
-                func(gate);
+                gate.generateNextValue();
         for (auto &mod : modules)
-            mod.second->allGates(func);
+            mod.second->generateNextValue();
         for (auto &modArray : moduleArrays)
             for (auto &mod : modArray.second)
-                mod->allGates(func);
+                mod->generateNextValue();
+    }
+
+    void Module::update()
+    {
+        for (auto &gate : gates)
+            gate.second.update();
+        for (auto &gateArray : gateArrays)
+            for (auto &gate : gateArray.second)
+                gate.update();
+        for (auto &mod : modules)
+            mod.second->update();
+        for (auto &modArray : moduleArrays)
+            for (auto &mod : modArray.second)
+                mod->update();
     }
 
     bool Module::alreadyDefined(const std::string &identifier)

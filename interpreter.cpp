@@ -135,7 +135,7 @@ namespace snowlang::interpreter
                     node->posStart,
                     node->posEnd,
                     err::INT_ONLY_OP);
-            return Number::divOp(left, right);
+            return Number::remOp(left, right);
         }
         else if (value.operationToken.type == TT_AND)
             return Number::andOp(left, right);
@@ -757,10 +757,8 @@ namespace snowlang::interpreter
         // Update all gates
         for (size_t i = 0; i < ticks; i++)
         {
-            ctx.logic.allGates([](LogicGate &g)
-                               { g.generateNextValue(); });
-            ctx.logic.allGates([](LogicGate &g)
-                               { g.update(); });
+            ctx.logic.generateNextValue();
+            ctx.logic.update();
         }
         return std::monostate();
     }

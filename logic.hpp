@@ -73,7 +73,8 @@ namespace snowlang
             std::vector<std::unique_ptr<Module>>>
             moduleArrays;
 
-        void allGates(std::function<void(LogicGate &)> func);
+        void generateNextValue();
+        void update();
 
         bool alreadyDefined(const std::string &identifier);
     };
