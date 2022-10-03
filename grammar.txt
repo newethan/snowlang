@@ -7,16 +7,20 @@ arithmetic operator precedence:
     `*` (MULT), `/` (DIV), `%` (REM)
 4. addition, subtraction
     `+` (PLUS), `-` (MINUS)  [both binary]
+5. logical or
+    `|` (OR)
+6. logical and
+    `&` (AND)
 
 script
-    : (MOD IDEN LBRACE block RBRACE /
+    : (MOD LPAREN (IDEN (COMMA IDEN)*)? RPAREN IDEN LBRACE block RBRACE /
         LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE block RBRACE)*
     ;
 block
     : (instruction)*
     ;
 instruction
-    : LET IDEN (LBRACK INT RBRACK)? IDEN SEMICOLON
+    : LET IDEN (LPAREN (expr (COMMA expr)*)? RPAREN)? IDEN (LBRACK expr RBRACK)? SEMICOLON
     : CONNECT item item SEMICOLON
     : IDEN ASSIGN expr SEMICOLON
     : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE block RBRACE
@@ -26,7 +30,7 @@ instruction
     : IF expr LBRACE block RBRACE
         (ELIF expr LBRACE block RBRACE)*
         (ELSE LBRACE block RBRACE)?
-    : PRINT (expr|STRLIT|LT item GT) SEMICOLON
+    : PRINT ((STRLIT (COMMA expr)*) | item) SEMICOLON
     : TICK expr? SEMICOLON
     : HOLD item INT expr SEMICOLON
     ;
@@ -62,3 +66,63 @@ atom
     : LPAREN expr RPAREN
     : IDEN LPAREN (expr (COMMA expr)*)? RPAREN
     ;
+
+Regex of terminals:
+
+skipped terminals:
+    WHITESPACE : \s+
+    COMMENT : #.*(\n|$)
+
+parenthesis, braces and brackets:
+    LBRACE : \{
+    RBRACE : \}
+    LBRACK : \[
+    RBRACK : \]
+    LPAREN : \(
+    RPAREN : \)
+
+delimiters:
+    SEMICOLON : ;
+    COMMA : ,
+
+operations:
+    PERIOD : \.        (member access)
+    PLUS : \+
+    MINUS : -
+    POW : \*\*
+    MULT : \*
+    DIV : /
+    REM : %
+    MOD : mod\b
+    ASSIGN : =(?!=)    (variable assignment)
+    OR : \|
+    AND : &
+    NOT : !(?!=)
+    GT : >(?!=)
+    GE : >=
+    EQ : ==
+    NEQ : !=
+    LE : <=
+    LT : <(?!=)
+
+instructions and keywords for instructions:
+    PRINT : print\b
+    TICK : tick\b
+    HOLD : hold\b
+    LET : let\b
+    CON : con\b
+    IF : if\b
+    ELIF : elif\b
+    ELSE : else\b
+    FOR : for\b
+    WHILE : while\b
+    BREAK : break\b
+    CONTINUE : continue\b
+    RETURN : return\b
+    IN : in\b
+
+terminals with variable values:
+    FLOAT : [0-9]+[.][0-9]+
+    INT : \d+
+    IDEN : \w+\b
+    STRLIT : \".*?\"

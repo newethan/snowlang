@@ -47,6 +47,7 @@ namespace snowlang
         inline float getFloat() { return floatVal; }
 
         bool isZero();
+        std::string repr();
 
         static Number addOp(Number left, Number right);
         static Number subOp(Number left, Number right);
@@ -66,10 +67,14 @@ namespace snowlang
 
     struct ModuleDeclaration
     {
+        std::vector<std::string> args;
         std::unique_ptr<Node> body;
 
-        ModuleDeclaration(std::unique_ptr<Node> t_body)
-            : body(std::move(t_body)) {}
+        ModuleDeclaration(
+            std::vector<std::string> t_args,
+            std::unique_ptr<Node> t_body)
+            : args(std::move(t_args)),
+              body(std::move(t_body)) {}
     };
 
     struct FunctionDeclaration

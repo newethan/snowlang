@@ -25,9 +25,6 @@ namespace snowlang::interpreter
         Number returnValue{Number(0)};
         bool inRuntime{false};
 
-        // module context
-        std::vector<std::string> buildStack;
-
         Context(SymbolTable &t_symbolTable, Module &t_logic)
             : symbolTable(t_symbolTable), logic(t_logic) {}
 
@@ -36,11 +33,6 @@ namespace snowlang::interpreter
             inLoop = other.inLoop;
             inFunction = other.inFunction;
             inRuntime = other.inRuntime;
-        }
-
-        inline void copyModuleCtx(Context &other)
-        {
-            buildStack = other.buildStack;
         }
 
         inline void copyInfoToForward(Context &other)
@@ -71,50 +63,60 @@ namespace snowlang::interpreter
     private:
         std::unique_ptr<Node> m_ast;
 
-        NodeReturnType buildModule(
-            Context &ctx, const std::string &identifier,
-            int posStart, int posEnd);
+        std::vector<std::string> buildStack;
+
+        std::unique_ptr<Module> buildModule(
+            Context &ctx,
+            std::string typeName, int posStart, int posEnd,
+            const std::vector<std::unique_ptr<Node>> &args =
+                std::vector<std::unique_ptr<Node>>());
+
         NodeReturnType visit(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitBinOp(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitUnOp(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitLeaf(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitItem(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitDefine(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitCon(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitFor(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitWhile(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitBreak(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitContinue(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitReturn(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitIf(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitBlock(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitFuncDecl(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitFuncCall(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitMod(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitVarAssign(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitPrint(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitTick(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitHold(
-            std::unique_ptr<Node> &node, Context &ctx);
+            const std::unique_ptr<Node> &node, Context &ctx);
+
+        // Assumes string's first and last characters are `"`.
+        void printStrlit(
+            Context &ctx, std::string &strlit, int strPosStart,
+            std::vector<std::unique_ptr<Node>> &expressions);
     };
 }

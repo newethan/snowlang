@@ -48,8 +48,24 @@ namespace snowlang::parser
             int posStart = accepted().tokenStart;
             if (accepted().type == TT_MOD)
             {
+                // Parse identifier
                 accept(TT_IDEN, err::EXPECTED_IDEN);
                 auto identifier = accepted();
+
+                // Parse arguments
+                vector<Token> args;
+                if (accept(TT_LPAREN))
+                {
+                    if (typeIs(TT_IDEN))
+                    {
+                        do
+                        {
+                            accept(TT_IDEN, err::EXPECTED_IDEN);
+                            args.push_back(accepted());
+                        } while (accept(TT_COMMA));
+                    }
+                    accept(TT_RPAREN, err::EXPECTED_RPAREN);
+                }
                 accept(TT_LBRACE, err::EXPECTED_LBRACE);
                 auto body = block();
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
@@ -57,7 +73,7 @@ namespace snowlang::parser
 
                 fields.push_back(make_unique<Node>(
                     NT_MOD,
-                    ModuleValue(identifier, move(body)),
+                    ModuleValue(identifier, args, move(body)),
                     posStart, posEnd));
             }
             else if (accepted().type == TT_LET)
@@ -123,22 +139,42 @@ namespace snowlang::parser
         int posStart = accepted().tokenStart;
         if (accepted().type == TT_LET)
         {
+            // Parse typename
             accept(TT_IDEN, err::EXPECTED_IDEN);
             Token typeName = accepted();
-            Token arraySize;
-            if (accept(TT_LBRACK)) // Optional - type is array
+
+            // Parse arguments for construction
+            vector<unique_ptr<Node>> args;
+            if (accept(TT_LPAREN))
             {
-                accept(TT_INT, err::EXPECTED_INT);
-                arraySize = accepted();
-                accept(TT_RBRACK, err::EXPECTED_RBRACK);
+                if (!accept(TT_RPAREN))
+                {
+                    do
+                    {
+                        args.push_back(expr());
+                    } while (accept(TT_COMMA));
+                    accept(TT_RPAREN, err::EXPECTED_RPAREN);
+                }
             }
+
+            // Parse identifier
             accept(TT_IDEN, err::EXPECTED_IDEN);
             auto identidier = accepted();
+
+            // Parse array size specifier
+            unique_ptr<Node> arraySize = nullptr;
+            if (accept(TT_LBRACK)) // Optional - type is array
+            {
+                arraySize = expr();
+                accept(TT_RBRACK, err::EXPECTED_RBRACK);
+            }
+
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
             int posEnd = accepted().tokenEnd;
+
             return make_unique<Node>(
                 NT_DEFINE,
-                DefineValue(typeName, arraySize, identidier),
+                DefineValue(typeName, move(arraySize), move(args), identidier),
                 posStart, posEnd);
         }
         else if (accepted().type == TT_CON)
@@ -246,28 +282,20 @@ namespace snowlang::parser
             if (accept(TT_STRLIT))
             {
                 auto strlit = accepted();
+                vector<unique_ptr<Node>> expresions;
+                while (accept(TT_COMMA))
+                    expresions.push_back(expr());
                 accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
                 int posEnd = accepted().tokenEnd;
                 return make_unique<Node>(
-                    NT_PRINT, PrintValue(strlit), posStart, posEnd);
+                    NT_PRINT, PrintValue(strlit, move(expresions)), posStart, posEnd);
             }
-            else if (accept(TT_LT))
-            {
-                auto itemToPrint = item();
-                accept(TT_GT, err::EXPECTED_GT);
-                accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-                int posEnd = accepted().tokenEnd;
-                return make_unique<Node>(
-                    NT_PRINT,
-                    PrintValue(move(itemToPrint), false),
-                    posStart, posEnd);
-            }
-            auto expression = expr();
+            auto itemToPrint = item();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
             int posEnd = accepted().tokenEnd;
             return make_unique<Node>(
                 NT_PRINT,
-                PrintValue(move(expression), true),
+                PrintValue(move(itemToPrint)),
                 posStart, posEnd);
         }
         else if (accepted().type == TT_TICK)

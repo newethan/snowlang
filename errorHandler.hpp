@@ -19,7 +19,6 @@ namespace snowlang::err
     const std::string EXPECTED_RPAREN = "Parsing error: Expected ')'.";
     const std::string EXPECTED_LBRACE = "Parsing error: Expected '{'.";
     const std::string EXPECTED_RBRACE = "Parsing error: Expected '}'.";
-    const std::string EXPECTED_GT = "Parsing error: Expected '>'.";
     const std::string EXPECTED_COMMA = "Parsing error: Expected ','.";
     const std::string EXPECTED_SEMICOLON = "Parsing error: Expected ';'.";
     const std::string EXPECTED_ASSIGN = "Parsing error: Expected '='.";
@@ -53,21 +52,32 @@ namespace snowlang::err
     const std::string INDEX_MUST_BE_INTEGER = "Runtime error: Index must be integer.";
     inline std::string INDEX_OUT_OF_BOUNDS(int lower, int upper, int got)
     {
-        std::string buffer;
-        buffer.append("Runtime error: index out of bounds of array.");
-        buffer.append(" (Expected index between ");
-        buffer.append(std::to_string(lower));
-        buffer.append(" and ");
-        buffer.append(std::to_string(upper));
-        buffer.append(", inclusive, but got ");
-        buffer.append(std::to_string(got));
-        buffer.append(")");
+        std::string buf;
+        buf += "Runtime error: index out of bounds.";
 
-        return buffer;
+        // both bounds are the same - only one index possible
+        if (lower == upper)
+        {
+            buf += " (Expected ";
+            buf += std::to_string(lower);
+        }
+        else // range for possible indeces
+        {
+            buf += " (Expected index between ";
+            buf += std::to_string(lower);
+            buf += " and ";
+            buf += std::to_string(upper);
+            buf += ", inclusive,";
+        }
+        buf += " but got ";
+        buf += std::to_string(got);
+        buf += ")";
+
+        return buf;
     }
     const std::string RANGE_BOUND_MUST_BE_INTEGER =
         "Runtime error: Range bound must be integer.";
-    const std::string EXPECTED_POS_INT_TICKS =
+    const std::string EXPECTED_POS_INT =
         "Runtime error: Expected a positive integer.";
     const std::string INT_ONLY_OP = "Runtime error: Operation defined for integers only.";
     const std::string LOWER_BOUND_GT_UPPER_BOUND =
@@ -89,15 +99,27 @@ namespace snowlang::err
         "Runtime error: Cannot connect differently sized arrays of gates.";
     inline const std::string WRONG_ARG_NUM(int expected, int got)
     {
-        std::string buffer;
-        buffer.append("Runtime error: Incorrect number of arguments to call function.");
-        buffer.append(" (Expected ");
-        buffer.append(std::to_string(expected));
-        buffer.append(", got ");
-        buffer.append(std::to_string(got));
-        buffer.append(")");
+        std::string buf;
+        buf += "Runtime error: Incorrect number of arguments to call function.";
+        buf += " (Expected ";
+        buf += std::to_string(expected);
+        buf += ", got ";
+        buf += std::to_string(got);
+        buf += ")";
 
-        return buffer;
+        return buf;
+    }
+    inline const std::string MOD_WRONG_ARG_NUM(int expected, int got)
+    {
+        std::string buf;
+        buf += "Runtime error: Incorrect number of arguments to construct module.";
+        buf += " (Expected ";
+        buf += std::to_string(expected);
+        buf += ", got ";
+        buf += std::to_string(got);
+        buf += ")";
+
+        return buf;
     }
     const std::string RETURN_OUTSIDE_FUNCTION =
         "Runtime error: 'return' statement outside of a function.";
@@ -113,21 +135,21 @@ namespace snowlang::err
     inline const std::string ITEM_VALUE_WRONG_SIZE(
         int expected, int got)
     {
-        std::string buffer;
-        buffer.append("Runtime error: Incorrect size for object value.");
-        buffer.append(" (Expected ");
-        buffer.append(std::to_string(expected));
+        std::string buf;
+        buf += "Runtime error: Incorrect size for object value.";
+        buf += " (Expected ";
+        buf += std::to_string(expected);
         if (expected == 1)
-            buffer.append(" bit, got ");
+            buf += " bit, got ";
         else
-            buffer.append(" bits, got ");
-        buffer.append(std::to_string(got));
+            buf += " bits, got ";
+        buf.append(std::to_string(got));
         if (got == 1)
-            buffer.append(" bit)");
+            buf += " bit)";
         else
-            buffer.append(" bits)");
+            buf += " bits)";
 
-        return buffer;
+        return buf;
     }
     const std::string OBJECT_VALUE_ONE_OR_ZERO =
         "Runtime error: Object value must be made up of '0' and '1'.";

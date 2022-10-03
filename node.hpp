@@ -85,16 +85,17 @@ namespace snowlang
     struct DefineValue
     {
         Token typeName;
-        Token arraySize;
+        std::unique_ptr<Node> arraySize;
+        std::vector<std::unique_ptr<Node>> args;
         Token identifier;
 
         DefineValue(
             Token t_typeName,
-            Token t_arraySize,
+            std::unique_ptr<Node> t_arraySize,
+            std::vector<std::unique_ptr<Node>> t_args,
             Token t_identifier)
-            : typeName(t_typeName),
-              arraySize(t_arraySize),
-              identifier(t_identifier) {}
+            : typeName(t_typeName), arraySize(std::move(t_arraySize)),
+              args(std::move(t_args)), identifier(t_identifier) {}
     };
 
     struct ConValue
@@ -204,13 +205,15 @@ namespace snowlang
     struct ModuleValue
     {
         Token identifier;
+        std::vector<Token> args;
         std::unique_ptr<Node> body;
 
         ModuleValue(
             Token t_identifier,
+            std::vector<Token> t_args,
             std::unique_ptr<Node> t_body)
             : identifier(t_identifier),
-              body(std::move(t_body)) {}
+              args(t_args), body(std::move(t_body)) {}
     };
 
     struct VarAssignValue
@@ -228,16 +231,15 @@ namespace snowlang
     struct PrintValue
     {
         Token strlit;
-        std::unique_ptr<Node> expressionOrItem{nullptr};
-        bool isExpression{false};
-        bool isItem{false};
+        std::vector<std::unique_ptr<Node>> expressions;
+        std::unique_ptr<Node> item{nullptr};
 
-        PrintValue(Token t_strlit) : strlit(t_strlit) {}
+        PrintValue(Token t_strlit,
+                   std::vector<std::unique_ptr<Node>> t_expressions)
+            : strlit(t_strlit), expressions(std::move(t_expressions)) {}
 
-        PrintValue(std::unique_ptr<Node> t_expressionOrItem,
-                   bool t_isExpression)
-            : expressionOrItem(std::move(t_expressionOrItem)),
-              isExpression(t_isExpression), isItem(!isExpression) {}
+        PrintValue(std::unique_ptr<Node> t_item)
+            : item(std::move(t_item)) {}
     };
 
     struct TickValue
@@ -291,9 +293,5 @@ namespace snowlang
               value(std::move(t_value)),
               posStart(t_posStart),
               posEnd(t_posEnd) {}
-
-        static std::string reprNodeType(NodeType nodeType);
     };
-    void printAst(const std::unique_ptr<Node> &ast,
-                  int indent = 0);
 }

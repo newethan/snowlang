@@ -7,11 +7,9 @@ namespace snowlang
 {
     enum TokenType
     {
-        TT_NULL,       // null token
-        TT_EOF,        // end of file
-        TT_WHITESPACE, // whitespace
-        TT_COMMENT,    // comment
-        TT_LBRACE,     // brackets
+        TT_NULL,   // null token
+        TT_EOF,    // end of file
+        TT_LBRACE, // brackets
         TT_RBRACE,
         TT_LBRACK,
         TT_RBRACK,
@@ -58,8 +56,6 @@ namespace snowlang
     };
 
     const std::vector<std::pair<std::regex, TokenType>> tokenRegexMap{
-        {std::regex("^\\s+"), TT_WHITESPACE},
-        {std::regex("^#.*(\n|$)"), TT_COMMENT},
         {std::regex("^\\{"), TT_LBRACE},
         {std::regex("^\\}"), TT_RBRACE},
         {std::regex("^\\["), TT_LBRACK},
@@ -105,20 +101,36 @@ namespace snowlang
         {std::regex("^\\w+\\b"), TT_IDEN},
         {std::regex("^\".*?\""), TT_STRLIT}};
 
-    class Token
+    struct Token
     {
-    public:
         enum TokenType type = TT_NULL;
         std::string value;
         int tokenStart = 0, tokenEnd = 0;
 
         Token() = default;
+
         Token(enum TokenType t_type,
               std::string t_value,
-              int t_tokenStart,
-              int t_tokenEnd);
+              int t_tokenStart, int t_tokenEnd)
+            : type(t_type), value(t_value),
+              tokenStart(t_tokenStart),
+              tokenEnd(t_tokenEnd) {}
+        Token(enum TokenType t_type,
+              std::string t_value,
+              int t_pos)
+            : type(t_type), value(t_value),
+              tokenStart(t_pos),
+              tokenEnd(t_pos) {}
 
-        static std::string reprTokenType(enum TokenType);
-        std::string repr();
+        Token(enum TokenType t_type,
+              int t_tokenStart, int t_tokenEnd)
+            : type(t_type),
+              tokenStart(t_tokenStart),
+              tokenEnd(t_tokenEnd) {}
+        Token(enum TokenType t_type,
+              int t_pos)
+            : type(t_type),
+              tokenStart(t_pos),
+              tokenEnd(t_pos) {}
     };
 }

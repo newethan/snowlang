@@ -1,19 +1,11 @@
 mod Main
 {
-    let or[8] t;
-    let or r;
-    let and a;
-    for i in (0, 7)
-    {
-        con t[i] a;
-    }
-    con r a;
 }
 
 let runtime ()
 {
-    hold t 11111111 100;
-    hold r 1 100;
-    tick 1;
-    print <a>;
+    a = 1;
+    b = 2;
+    c = 3;
+    print "\0 + \1 = \2", a, b, c;
 }

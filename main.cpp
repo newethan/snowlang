@@ -32,7 +32,8 @@ int main(int argc, char *argv[])
 
     try
     {
-        auto tokens = lexer::lex(text);
+        lexer::Lexer l(text);
+        auto tokens = l.lex();
         // for (auto &token : tokens)
         //     cout << token.repr() << endl;
         parser::Parser p(tokens);

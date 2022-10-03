@@ -1,5 +1,5 @@
 #include "interpreter.hpp"
-#include <regex>
+#include <string>
 
 namespace snowlang::interpreter
 {
@@ -11,16 +11,12 @@ namespace snowlang::interpreter
         globalSymbolTable.setSymbol("false", Number(0));
         globalSymbolTable.setSymbol("null", Number(0));
 
-        // Global module - module 'Main' built into it.
-        Module globalModule;
-
-        Context ctx(globalSymbolTable, globalModule);
+        auto globalModule = std::make_unique<Module>();
+        Context ctx(globalSymbolTable, *globalModule);
         visit(m_ast, ctx);
 
         // Build module 'Main'.
-        SymbolTable buildSymbolTable(&globalSymbolTable);
-        Context buildCtx(buildSymbolTable, globalModule);
-        buildModule(buildCtx, "Main", 0, 0);
+        globalModule = buildModule(ctx, "Main", 0, 0);
 
         // Look up runtime function
         auto &runtimeSymbol =
@@ -32,35 +28,59 @@ namespace snowlang::interpreter
 
         // Execute runtime function
         SymbolTable runtimeSymbolTable(&globalSymbolTable);
-        Context runtimeCtx(runtimeSymbolTable, globalModule);
+        Context runtimeCtx(runtimeSymbolTable, *globalModule);
         runtimeCtx.inRuntime = true;
         runtimeCtx.inFunction = true;
         visit(runtimeFunction.bodyNode, runtimeCtx);
     };
 
-    NodeReturnType Interpreter::buildModule(
-        Context &ctx, const std::string &identifier,
-        int posStart, int posEnd)
+    std::unique_ptr<Module> Interpreter::buildModule(
+        Context &ctx,
+        std::string typeName, int posStart, int posEnd,
+        const std::vector<std::unique_ptr<Node>> &args)
     {
+        // Check for circular construction
+        if (!buildStack.empty() &&
+            std::count(buildStack.begin(),
+                       buildStack.end(), typeName) > 0)
+            throw err::SnowlangException(
+                posStart, posEnd,
+                err::CIRCULAR_CONSTRUCTION);
+        buildStack.push_back(typeName);
+
+        // Get module declaration
         auto &typeNameSymbol = ctx.symbolTable.lookup(
-            identifier, posStart, posEnd);
+            typeName, posStart, posEnd);
         if (!std::holds_alternative<ModuleDeclaration>(
                 typeNameSymbol))
             throw err::SnowlangException(
                 posStart, posEnd, err::DOES_NOT_NAME_MODULE_TYPE);
         auto &moduleDecl = std::get<ModuleDeclaration>(typeNameSymbol);
-        if (std::count(ctx.buildStack.begin(),
-                       ctx.buildStack.end(), identifier) > 0)
+
+        // visit body node
+        auto mod = std::make_unique<Module>();
+        auto buildSymbolTable =
+            SymbolTable(ctx.symbolTable.firstAncestor());
+        if (args.size() != moduleDecl.args.size())
             throw err::SnowlangException(
-                posStart, posEnd, err::CIRCULAR_CONSTRUCTION);
-        ctx.buildStack.push_back(identifier);
-        visit(moduleDecl.body, ctx);
-        ctx.buildStack.pop_back();
-        return std::monostate();
+                posStart, posEnd,
+                err::MOD_WRONG_ARG_NUM(
+                    moduleDecl.args.size(), args.size()));
+        for (size_t i = 0; i < args.size(); i++)
+        {
+            buildSymbolTable.setSymbol(
+                moduleDecl.args[i],
+                std::get<Number>(visit(args[i], ctx)));
+        }
+
+        Context buildCtx(buildSymbolTable, *mod);
+        visit(moduleDecl.body, buildCtx);
+        buildStack.pop_back();
+        return mod;
     }
 
     NodeReturnType Interpreter::visit(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         if (node->type == NT_BINOP)
             return visitBinOp(node, ctx);
@@ -106,7 +126,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitBinOp(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<BinOpValue>(node->value);
         auto left = std::get<Number>(visit(value.left, ctx));
@@ -157,7 +177,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitUnOp(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<UnOpValue>(node->value);
         auto operand = std::get<Number>(visit(value.node, ctx));
@@ -180,7 +200,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitLeaf(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &token = std::get<LeafValue>(node->value).token;
         if (token.type == TT_INT)
@@ -202,7 +222,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitItem(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         // Used to hold the current module. Does not own the Module.
         Module *currModule = &ctx.logic;
@@ -307,7 +327,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitDefine(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         if (ctx.inFunction)
             throw err::SnowlangException(
@@ -334,30 +354,28 @@ namespace snowlang::interpreter
             gateType = GT_XNOR;
         bool isGate = (gateType != GT_NULL);
 
-        if (value.arraySize.type == TT_NULL) // type is not array
+        if (!value.arraySize) // type is not array
         {
             if (isGate)
-            {
                 ctx.logic.gates[identifier] = LogicGate(gateType);
-            }
             else
-            {
-                auto newMod = std::make_unique<Module>();
-                auto newSymbolTable = SymbolTable(&ctx.symbolTable);
-                Context newCtx(newSymbolTable, *newMod);
-                newCtx.copyModuleCtx(ctx);
-                buildModule(
-                    newCtx, typeName, value.typeName.tokenStart,
-                    value.typeName.tokenEnd);
-                ctx.logic.modules[identifier] = std::move(newMod);
-            }
+                ctx.logic.modules[identifier] = std::move(
+                    buildModule(
+                        ctx, typeName,
+                        value.typeName.tokenStart,
+                        value.typeName.tokenEnd,
+                        value.args));
         }
         else // type is array
         {
-            // size is 0 or positive because value.arraySize is an integer
-            // token. having a 0-sized array does not cause undefined
-            // behavior.
-            int size = std::stoi(value.arraySize.value);
+            auto num = visit(value.arraySize, ctx);
+            auto sizeNumber = std::get<Number>(
+                num);
+            if (!sizeNumber.holdsInt() || sizeNumber.getInt() < 0)
+                throw err::SnowlangException(
+                    value.arraySize->posStart, value.arraySize->posEnd,
+                    err::EXPECTED_POS_INT);
+            int size = sizeNumber.getInt();
             if (isGate)
             {
                 ctx.logic.gateArrays[identifier] =
@@ -367,26 +385,22 @@ namespace snowlang::interpreter
             {
                 std::vector<std::unique_ptr<Module>> moduleArray;
                 for (int i = 0; i < size; i++)
-                {
-                    auto newMod = std::make_unique<Module>();
-                    auto newSymbolTable = SymbolTable(&ctx.symbolTable);
-                    Context newCtx(newSymbolTable, *newMod);
-                    newCtx.copyModuleCtx(ctx);
-                    buildModule(
-                        newCtx,
-                        value.typeName.value,
-                        value.typeName.tokenStart,
-                        value.typeName.tokenEnd);
-                    moduleArray.push_back(std::move(newMod));
-                }
-                ctx.logic.moduleArrays[identifier] = std::move(moduleArray);
+                    moduleArray.push_back(
+                        buildModule(
+                            ctx,
+                            value.typeName.value,
+                            value.typeName.tokenStart,
+                            value.typeName.tokenEnd,
+                            value.args));
+                ctx.logic.moduleArrays[identifier] =
+                    std::move(moduleArray);
             }
         }
         return std::monostate();
     }
 
     NodeReturnType Interpreter::visitCon(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         if (ctx.inFunction)
             throw err::SnowlangException(
@@ -426,7 +440,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitFor(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<ForValue>(node->value);
 
@@ -454,7 +468,6 @@ namespace snowlang::interpreter
             newSymbolTable.setSymbol(value.var.value, var);
             Context newCtx(newSymbolTable, ctx.logic);
             newCtx.copyCtxInfo(ctx);
-            newCtx.copyModuleCtx(ctx);
             newCtx.inLoop = true;
 
             visit(value.block, newCtx); // execute body
@@ -475,7 +488,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitWhile(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<WhileValue>(node->value);
 
@@ -485,7 +498,6 @@ namespace snowlang::interpreter
             SymbolTable newSymbolTable(&ctx.symbolTable);
             Context newCtx(newSymbolTable, ctx.logic);
             newCtx.copyCtxInfo(ctx);
-            newCtx.copyModuleCtx(ctx);
             newCtx.inLoop = true;
 
             visit(value.block, newCtx); // execute body
@@ -504,7 +516,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitBreak(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         if (!ctx.inLoop)
             throw err::SnowlangException(
@@ -515,7 +527,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitContinue(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         if (!ctx.inLoop)
             throw err::SnowlangException(
@@ -526,7 +538,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitReturn(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<ReturnValue>(node->value);
         if (!ctx.inFunction)
@@ -539,7 +551,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitIf(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<IfValue>(node->value);
         size_t blockIndex = 0;
@@ -564,7 +576,6 @@ namespace snowlang::interpreter
                 SymbolTable newSymbolTable(&ctx.symbolTable);
                 Context newCtx(newSymbolTable, ctx.logic);
                 newCtx.copyCtxInfo(ctx);
-                newCtx.copyModuleCtx(ctx);
 
                 // value.ifBlocks has an else block, therefore it isn't
                 // empty and value.ifBlocks.back() is defined behavior
@@ -578,7 +589,6 @@ namespace snowlang::interpreter
             SymbolTable newSymbolTable(&ctx.symbolTable);
             Context newCtx(newSymbolTable, ctx.logic);
             newCtx.copyCtxInfo(ctx);
-            newCtx.copyModuleCtx(ctx);
             visit(value.ifBlocks[blockIndex], newCtx);
             ctx.copyInfoToForward(newCtx);
         }
@@ -587,7 +597,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitBlock(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<BlockValue>(node->value);
         for (auto &field : value.fields)
@@ -600,7 +610,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitFuncDecl(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<FuncDeclValue>(node->value);
         std::vector<std::string> args;
@@ -613,7 +623,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitFuncCall(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<FuncCallValue>(node->value);
         auto &funcDeclSymbol = ctx.symbolTable.lookup(
@@ -641,7 +651,6 @@ namespace snowlang::interpreter
                 funcDecl.args[i],
                 std::get<Number>(visit(value.args[i], ctx)));
         Context newCtx(newSymbolTable, ctx.logic);
-        newCtx.copyModuleCtx(ctx);
         newCtx.inFunction = true;
         visit(funcDecl.bodyNode, newCtx);
         auto returnValue = newCtx.returnValue;
@@ -649,17 +658,20 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitMod(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<ModuleValue>(node->value);
+        std::vector<std::string> args;
+        for (auto &argToken : value.args)
+            args.push_back(argToken.value);
         ctx.symbolTable.setSymbol(
             value.identifier.value,
-            ModuleDeclaration(std::move(value.body)));
+            ModuleDeclaration(args, std::move(value.body)));
         return std::monostate();
     }
 
     NodeReturnType Interpreter::visitVarAssign(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<VarAssignValue>(node->value);
         auto symbolValue = std::get<Number>(visit(value.expression, ctx));
@@ -668,44 +680,13 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitPrint(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<PrintValue>(node->value);
         if (value.strlit.type != TT_NULL) // print string literals
         {
-            std::string temp(value.strlit.value);
-            temp = temp.substr(1, temp.length() - 2);
-
-            // Basic escape sequqneces
-            for (size_t i = 0; i < temp.length(); i++)
-                if (temp[i] == '\\' && i + 1 < temp.length())
-                {
-                    if (temp[i + 1] == 'n')
-                    {
-                        temp[i] = '\n';
-                        temp.erase(i + 1, 1);
-                    }
-                    else if (temp[i + 1] == 't')
-                    {
-                        temp[i] = '\t';
-                        temp.erase(i + 1, 1);
-                    }
-                    else
-                    {
-                        temp[i] = temp[i + 1];
-                        temp.erase(i + 1, 1);
-                    }
-                }
-            std::cout << temp;
-        }
-        else if (value.isExpression) // print expression
-        {
-            auto expression =
-                std::get<Number>(visit(value.expressionOrItem, ctx));
-            if (expression.holdsInt())
-                std::cout << expression.getInt();
-            else if (expression.holdsFloat())
-                std::cout << expression.getFloat();
+            printStrlit(ctx, value.strlit.value,
+                        value.strlit.tokenStart, value.expressions);
         }
         else // print item
         {
@@ -713,7 +694,7 @@ namespace snowlang::interpreter
                 throw err::SnowlangException(
                     node->posStart, node->posEnd,
                     err::LOGIC_INSIDE_FUNCTION);
-            auto itemValue = visit(value.expressionOrItem, ctx);
+            auto itemValue = visit(value.item, ctx);
             if (std::holds_alternative<LogicGate *>(itemValue)) // item is gate
             {
                 auto gate = std::get<LogicGate *>(itemValue);
@@ -738,7 +719,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitTick(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         if (!ctx.inRuntime)
             throw err::SnowlangException(
@@ -751,7 +732,7 @@ namespace snowlang::interpreter
             throw err::SnowlangException(
                 value.expression->posStart,
                 value.expression->posEnd,
-                err::EXPECTED_POS_INT_TICKS);
+                err::EXPECTED_POS_INT);
         size_t ticks = tickNumber.getInt();
 
         // Update all gates
@@ -764,7 +745,7 @@ namespace snowlang::interpreter
     }
 
     NodeReturnType Interpreter::visitHold(
-        std::unique_ptr<Node> &node, Context &ctx)
+        const std::unique_ptr<Node> &node, Context &ctx)
     {
         auto &value = std::get<HoldValue>(node->value);
 
@@ -775,7 +756,7 @@ namespace snowlang::interpreter
             throw err::SnowlangException(
                 value.holdFor->posStart,
                 value.holdFor->posEnd,
-                err::EXPECTED_POS_INT_TICKS);
+                err::EXPECTED_POS_INT);
         int ticks = tickNumber.getInt();
 
         if (std::holds_alternative<LogicGate *>(item)) // item is gate
@@ -803,20 +784,22 @@ namespace snowlang::interpreter
         {
             auto gateArray = std::get<std::vector<LogicGate> *>(item);
 
+            std::string objectInit = value.holdAs.value;
+            size_t objectInitSize = objectInit.size();
+
             // Make sure size of object value is matches size of array
-            if (value.holdAs.value.size() != gateArray->size())
+            if (objectInitSize != gateArray->size())
                 throw err::SnowlangException(
                     value.holdAs,
                     err::ITEM_VALUE_WRONG_SIZE(
-                        gateArray->size(),
-                        value.holdAs.value.size()));
+                        gateArray->size(), objectInitSize));
 
             // Set value for each gate in array
-            for (size_t i = 0; i < value.holdAs.value.size(); i++)
+            for (size_t i = 0; i < objectInitSize; i++)
             {
-                if (value.holdAs.value[i] == '0')
+                if (objectInit[objectInitSize - 1 - i] == '0')
                     (*gateArray)[i].hold(false, ticks);
-                else if (value.holdAs.value[i] == '1')
+                else if (objectInit[objectInitSize - 1 - i] == '1')
                     (*gateArray)[i].hold(true, ticks);
                 else
                     throw err::SnowlangException(
@@ -825,5 +808,71 @@ namespace snowlang::interpreter
             }
         }
         return std::monostate();
+    }
+
+    void Interpreter::printStrlit(
+        Context &ctx, std::string &strlit, int strPosStart,
+        std::vector<std::unique_ptr<Node>> &expressions)
+    {
+        std::string temp;
+        size_t numExpressions = expressions.size();
+
+        // Basic escape sequqneces
+
+        // Go over each character in string.
+        // For bounds not inclusive of first and last characters
+        // To remove the outer quote (`"`) characters.
+        for (size_t i = 1; i < strlit.length() - 1; i++)
+        {
+            // only try to parse escape sequqnce if current character is `\`
+            // and another character exists before the closing quote (`"`)
+            if (strlit[i] != '\\' || i + 1 >= strlit.length() - 1)
+            {
+                temp += strlit[i];
+                continue;
+            }
+
+            // Try to build a number out of the escaped sequence.
+            // If the number is not empty, it will be treated as an index
+            // and the escape sequence will be replaced with the value
+            // of the expression with that index.
+            std::string number;
+            for (size_t j = i + 1; isdigit(strlit[j]); j++)
+                number += strlit[j];
+            if (!number.empty()) // Escape sequence is index
+            {
+                int index = std::stoi(number);
+                if (index < 0 || (size_t)index > numExpressions - 1)
+                    throw err::SnowlangException(
+                        strPosStart + i,
+                        strPosStart + i + number.size(),
+                        err::INDEX_OUT_OF_BOUNDS(
+                            0, numExpressions - 1, index));
+                temp +=
+                    std::get<Number>(visit(expressions[index], ctx)).repr();
+                i += number.length();
+            }
+            else if (strlit[i + 1] == 'n') // newline escape sequence
+            {
+                temp += '\n';
+                i++;
+            }
+            else if (strlit[i + 1] == 't') // tab escapre sequence
+            {
+                temp += '\t';
+                i++;
+            }
+            else
+            {
+                // if no escape sequence recognized, the `\` will be ommitted.
+                // this can be thought of as if escaping something besides
+                // any of the valid escape sequences will just yield what was
+                // escaped. e.g. "\g" in the string will become just "g".
+                // and "\\" in the string will become "\".
+                temp += strlit[i + 1];
+                i++;
+            }
+        }
+        std::cout << temp;
     }
 }

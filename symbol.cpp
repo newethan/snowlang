@@ -163,6 +163,14 @@ namespace snowlang
             return Number(left.getFloat() < right.getFloat());
     }
 
+    std::string Number::repr()
+    {
+        if (holdsInt()) // holds int
+            return std::to_string(getInt());
+        else // holds float
+            return std::to_string(getFloat());
+    }
+
     void SymbolTable::setSymbol(const std::string &name, SymbolValueType value)
     {
         SymbolTable *symbolTable = this;
