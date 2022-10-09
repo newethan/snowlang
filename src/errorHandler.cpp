@@ -37,16 +37,15 @@ namespace snowlang::err
             }
             return pos;
         }
-    }
+    } // end of anonymous namespace
+
     void fatalErrorAbort(
-        const string &text,
-        const string &filename,
-        int posStart,
-        int posEnd,
+        Pos pos,
+        const std::string &filename, const std::string &text,
         const std::string &message)
     {
         // Get line number and line as a string
-        int lineNumber = countChar(text, 0, posStart, '\n') + 1;
+        int lineNumber = countChar(text, 0, pos.start, '\n') + 1;
         int lineBegin = 0;
         if (lineNumber > 1)
             lineBegin = posOfNthChar(text, '\n', lineNumber - 1) + 1;
@@ -54,23 +53,38 @@ namespace snowlang::err
         if (lineEnd < 0)
             lineEnd = text.length() - 1;
         string line = text.substr(lineBegin, lineEnd - lineBegin + 1);
-        int posInLine = posStart - lineBegin;
+        int posInLine = pos.start - lineBegin;
 
         // Print error message
-        cout << "File '" << filename << "' ";
-        cout << "line " << lineNumber << ":";
-        cout << endl;
         cout << "\033[31m"
-             << "Fatal error:"
-             << "\033[0m" << endl;
+             << "Fatal error. "
+             << "\033[0m";
+        if (pos.valid)
+        {
+            cout << "File '" << filename << "' ";
+            cout << "line " << lineNumber << ": " << endl;
+        }
+        else
+        {
+            cout << endl;
+        }
         cout << "\033[1m" << message << "\033[0m" << endl;
-        cout << line << endl;
+        if (!pos.valid)
+            exit(1);
+        if (!line.empty())
+        {
+            cout << line.substr(0, posInLine);
+            cout << "\033[31m";
+            cout << line.substr(posInLine, pos.end - pos.start + 1);
+            cout << "\033[0m";
+            cout << line.substr(posInLine + pos.end - pos.start + 1) << endl;
+        }
         for (int i = 0; i < posInLine; i++)
         {
             cout << " ";
         }
-        for (int i = posInLine;
-             i <= posInLine + (posEnd - posStart);
+        for (size_t i = posInLine;
+             i <= posInLine + (pos.end - pos.start);
              i++)
         {
             cout << "^";

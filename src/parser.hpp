@@ -11,8 +11,8 @@ namespace snowlang::parser
         const std::vector<Token> &tokens;
         size_t pos = 0;
 
-        Parser(const std::vector<Token> &t_tokens)
-            : tokens(t_tokens) {}
+        Parser(const std::vector<Token> &t_tokens, size_t t_fileIndex = 0)
+            : tokens(t_tokens), fileIndex(t_fileIndex) {}
 
         std::unique_ptr<Node> parse();
 
@@ -42,6 +42,8 @@ namespace snowlang::parser
         }
 
     private:
+        size_t fileIndex;
+
         Token m_acceptedToken;
         std::unique_ptr<Node> script();
         std::unique_ptr<Node> block();

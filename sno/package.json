@@ -1,0 +1,25 @@
+{
+  "name": "sno",
+  "displayName": "sno",
+  "description": "Snowlang syntax highlighting",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.72.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "snowlang",
+      "aliases": ["Snowlang", "snowlang"],
+      "extensions": [".sno"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "snowlang",
+      "scopeName": "source.sno",
+      "path": "./syntaxes/snowlang.tmLanguage.json"
+    }]
+  }
+}

@@ -1,0 +1,47 @@
+mod Timer (ticks)
+{
+    #input
+    let or inp;
+
+    #output
+    let or out;
+
+    if ticks < 1
+    {
+        print "Too little ticks for timer (expected at least 1 but got \0)\n", ticks;
+    }
+    elif ticks == 1
+    {
+        con inp out;
+    }
+    else
+    {
+        let or buf[ticks - 1];
+        if ticks - 1 > 1
+        {
+            for i in (0, tick - 2)
+            {
+                con buf[i] buf[i+1];
+            }
+        }
+        con inp buf[0];
+        con buf[ticks - 2] out;
+    }
+}
+
+mod TickExtender (ticks)
+{
+    # input + output
+    # 1 tick pulse to mem to flip it and switch tick extender on
+    let xor mem;
+
+    let or buf;
+    let xor sig_to_timer;
+    con mem buf;
+    con mem sig_to_timer;
+    con buf sig_to_timer;
+    
+    let Timer(ticks - 2) t;
+    con sig_to_timer t.inp;
+    con t.out mem;
+}

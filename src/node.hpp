@@ -26,6 +26,7 @@ namespace snowlang
         NT_BLOCK,
         NT_FUNCDECL,
         NT_FUNCCALL,
+        NT_IMPORT,
         NT_MOD,
         NT_VARASSIGN,
         NT_PRINT,
@@ -230,7 +231,7 @@ namespace snowlang
 
     struct PrintValue
     {
-        Token strlit;
+        Token strlit = Token();
         std::vector<std::unique_ptr<Node>> expressions;
         std::unique_ptr<Node> item{nullptr};
 
@@ -283,15 +284,11 @@ namespace snowlang
         // By default LeafValue
         NodeValueType value;
 
-        int posStart, posEnd;
+        Pos pos;
 
-        Node(enum NodeType t_type,
-             NodeValueType t_value,
-             int t_posStart,
-             int t_posEnd)
-            : type(t_type),
-              value(std::move(t_value)),
-              posStart(t_posStart),
-              posEnd(t_posEnd) {}
+        Node(enum NodeType t_type, NodeValueType t_value,
+             const Pos &t_pos)
+            : type(t_type), value(std::move(t_value)),
+              pos(t_pos) {}
     };
 }

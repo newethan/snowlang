@@ -1,0 +1,80 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Snowlang",
+	"patterns": [
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#identifiers"
+		}
+	],
+	"repository": {
+		"comments" : {
+			"patterns": [{
+				"name": "comment.line.number-sign.snowlang",
+				"match": "#.*(\n|$)"
+			}]
+		},
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.snowlang",
+				"match": "\\b(if|elif|else|while|for|in|return)\\b"
+			},
+			{
+				"name" : "keyword.other.snowlang",
+				"match": "\\b(import|mod|let|con|print|tick|hold)\\b"
+			},
+			{
+				"name": "constant.language.snowlang",
+				"match": "\\b(true|false|null)\\b"
+			},
+			{
+				"name": "entity.name.class.snowlang",
+				"match": "\\b(or|and|xor|nor|nand|xnor)\\b"
+			},
+			{
+				"name" : "keyword.operator.snowlang",
+				"match": "(\\+|\\-|\\*|/|%|\\||&|\\.|=|>|<|!)"
+			}
+		]
+		},
+		"strings": {
+			"name": "string.quoted.double.snowlang",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.snowlang",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [{
+				"name": "constant.numeric.snowlang",
+				"match": "[0-9]+(\\.[0-9]+)?"
+			}]
+		},
+		"identifiers": {
+			"patterns": [{
+				"name": "entity.name.class",
+				"match": "\\b[A-Z][a-zA-Z_0-9]*\\b"
+			},
+			{
+				"name": "variable.other",
+				"match": "\\b[a-zA-Z_][a-zA-Z_0-9]*\\b"
+			}]
+		}
+	},
+	"scopeName": "source.sno"
+}

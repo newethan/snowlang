@@ -39,16 +39,15 @@ int main(int argc, char *argv[])
         parser::Parser p(tokens);
         auto ast = p.parse();
         // printAst(ast);
-        interpreter::Interpreter i(move(ast));
+        interpreter::Interpreter i(move(ast), filename, text);
         i.interpret();
     }
-    catch (err::SnowlangException &e)
+    catch (err::LexerParserException &e)
     {
-        err::fatalErrorAbort(
-            text,
-            filename,
-            e.posStart,
-            e.posEnd,
-            e.message);
+        err::fatalErrorAbort(e.pos, filename, text, e.message);
+    }
+    catch (err::InterpreterException &e)
+    {
+        err::fatalErrorAbort(e.pos, e.filename, e.text, e.message);
     }
 }

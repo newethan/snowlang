@@ -13,8 +13,9 @@ arithmetic operator precedence:
     `&` (AND)
 
 script
-    : (MOD LPAREN (IDEN (COMMA IDEN)*)? RPAREN IDEN LBRACE block RBRACE /
-        LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE block RBRACE)*
+    : (MOD LPAREN (IDEN (COMMA IDEN)*)? RPAREN IDEN LBRACE block RBRACE |
+        LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE block RBRACE |
+        IMPORT STRLIT SEMICOLON)*
     ;
 block
     : (instruction)*
@@ -31,7 +32,7 @@ instruction
         (ELIF expr LBRACE block RBRACE)*
         (ELSE LBRACE block RBRACE)?
     : PRINT ((STRLIT (COMMA expr)*) | item) SEMICOLON
-    : TICK expr? SEMICOLON
+    : TICK expr SEMICOLON
     : HOLD item INT expr SEMICOLON
     ;
 item
@@ -93,7 +94,6 @@ operations:
     MULT : \*
     DIV : /
     REM : %
-    MOD : mod\b
     ASSIGN : =(?!=)    (variable assignment)
     OR : \|
     AND : &
@@ -106,6 +106,8 @@ operations:
     LT : <(?!=)
 
 instructions and keywords for instructions:
+    IMPORT : import\b
+    MOD : mod\b
     PRINT : print\b
     TICK : tick\b
     HOLD : hold\b
@@ -124,5 +126,5 @@ instructions and keywords for instructions:
 terminals with variable values:
     FLOAT : [0-9]+[.][0-9]+
     INT : \d+
-    IDEN : \w+\b
+    IDEN : [a-zA-Z_][a-zA-Z_0-9]*\b
     STRLIT : \".*?\"

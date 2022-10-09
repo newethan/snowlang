@@ -18,9 +18,7 @@ namespace snowlang::parser
         }
         if (errorMessage == err::NOERR)
             return false;
-        throw err::SnowlangException(
-            current(),
-            errorMessage);
+        throw err::LexerParserException(current().pos, errorMessage);
     }
 
     bool Parser::accept(
@@ -35,17 +33,15 @@ namespace snowlang::parser
         }
         if (errorMessage == err::NOERR)
             return false;
-        throw err::SnowlangException(
-            current(),
-            errorMessage);
+        throw err::LexerParserException(current().pos, errorMessage);
     }
 
     unique_ptr<Node> Parser::script()
     {
         vector<unique_ptr<Node>> fields;
-        while (accept({TT_MOD, TT_LET}))
+        while (accept({TT_MOD, TT_LET, TT_IMPORT}))
         {
-            int posStart = accepted().tokenStart;
+            int posStart = accepted().pos.start;
             if (accepted().type == TT_MOD)
             {
                 // Parse identifier
@@ -69,12 +65,12 @@ namespace snowlang::parser
                 accept(TT_LBRACE, err::EXPECTED_LBRACE);
                 auto body = block();
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
-                int posEnd = accepted().tokenEnd;
+                int posEnd = accepted().pos.end;
 
                 fields.push_back(make_unique<Node>(
                     NT_MOD,
                     ModuleValue(identifier, args, move(body)),
-                    posStart, posEnd));
+                    Pos(posStart, posEnd, fileIndex)));
             }
             else if (accepted().type == TT_LET)
             {
@@ -94,22 +90,33 @@ namespace snowlang::parser
                 accept(TT_LBRACE, err::EXPECTED_LBRACE);
                 auto body = block();
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
-                int posEnd = accepted().tokenEnd;
+                int posEnd = accepted().pos.end;
 
                 fields.push_back(make_unique<Node>(
                     NT_FUNCDECL,
                     FuncDeclValue(identifier, argNames, move(body)),
-                    posStart, posEnd));
+                    Pos(posStart, posEnd, fileIndex)));
+            }
+            else if (accepted().type == TT_IMPORT)
+            {
+                accept(TT_STRLIT, err::EXPECTED_STRLIT);
+                auto strlit = accepted();
+                accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+                int posEnd = accepted().pos.end;
+                fields.push_back(make_unique<Node>(
+                    NT_IMPORT, LeafValue(strlit),
+                    Pos(posStart, posEnd, fileIndex)));
             }
         }
         int posStart = 0, posEnd = 0;
         if (!fields.empty()) // avoid undefined behavior
         {
-            posStart = fields.front()->posStart;
-            posEnd = fields.back()->posEnd;
+            posStart = fields.front()->pos.start;
+            posEnd = fields.back()->pos.end;
         }
         return make_unique<Node>(
-            NT_BLOCK, BlockValue(move(fields)), posStart, posEnd);
+            NT_BLOCK, BlockValue(move(fields)),
+            Pos(posStart, posEnd, fileIndex));
     }
 
     unique_ptr<Node> Parser::block()
@@ -125,18 +132,18 @@ namespace snowlang::parser
         int posStart = 0, posEnd = 0;
         if (!instructions.empty()) // avoid undefined behavior
         {
-            posStart = instructions.front()->posStart;
-            posEnd = instructions.back()->posEnd;
+            posStart = instructions.front()->pos.start;
+            posEnd = instructions.back()->pos.end;
         }
         return make_unique<Node>(
             NT_BLOCK,
             BlockValue(move(instructions)),
-            posStart, posEnd);
+            Pos(posStart, posEnd, fileIndex));
     }
 
     unique_ptr<Node> Parser::instruction()
     {
-        int posStart = accepted().tokenStart;
+        int posStart = accepted().pos.start;
         if (accepted().type == TT_LET)
         {
             // Parse typename
@@ -170,23 +177,23 @@ namespace snowlang::parser
             }
 
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
 
             return make_unique<Node>(
                 NT_DEFINE,
                 DefineValue(typeName, move(arraySize), move(args), identidier),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_CON)
         {
             auto left = item();
             auto right = item();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_CON,
                 ConValue(move(left), move(right)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_IDEN)
         {
@@ -194,11 +201,11 @@ namespace snowlang::parser
             accept(TT_ASSIGN, err::EXPECTED_ASSIGN);
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_VARASSIGN,
                 VarAssignValue(identifier, move(expression)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_FOR)
         {
@@ -213,11 +220,11 @@ namespace snowlang::parser
             accept(TT_LBRACE, err::EXPECTED_LBRACE);
             auto blockNode = block();
             accept(TT_RBRACE, err::EXPECTED_RBRACE);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_FOR,
                 ForValue(var, move(from), move(to), move(blockNode)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_WHILE)
         {
@@ -225,25 +232,27 @@ namespace snowlang::parser
             accept(TT_LBRACE, err::EXPECTED_LBRACE);
             auto blockNode = block();
             accept(TT_RBRACE, err::EXPECTED_RBRACE);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_WHILE,
                 WhileValue(move(cond), move(blockNode)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_BREAK)
         {
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
-                NT_BREAK, BreakValue(), posStart, posEnd);
+                NT_BREAK, BreakValue(),
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_CONTINUE)
         {
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
-                NT_CONTINUE, ContinueValue(), posStart, posEnd);
+                NT_CONTINUE, ContinueValue(),
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_IF)
         {
@@ -262,20 +271,20 @@ namespace snowlang::parser
                 ifBlocks.push_back(block());
                 accept(TT_RBRACE, err::EXPECTED_RBRACE);
             }
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_IF,
                 IfValue(move(conds), move(ifBlocks)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_RETURN)
         {
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_RETURN, ReturnValue(move(expression)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_PRINT)
         {
@@ -286,26 +295,28 @@ namespace snowlang::parser
                 while (accept(TT_COMMA))
                     expresions.push_back(expr());
                 accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-                int posEnd = accepted().tokenEnd;
+                int posEnd = accepted().pos.end;
                 return make_unique<Node>(
-                    NT_PRINT, PrintValue(strlit, move(expresions)), posStart, posEnd);
+                    NT_PRINT, PrintValue(strlit, move(expresions)),
+                    Pos(posStart, posEnd, fileIndex));
             }
             auto itemToPrint = item();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_PRINT,
                 PrintValue(move(itemToPrint)),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_TICK)
         {
             auto expression = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_TICK,
-                TickValue(move(expression)), posStart, posEnd);
+                TickValue(move(expression)),
+                Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_HOLD)
         {
@@ -314,20 +325,19 @@ namespace snowlang::parser
             auto holdAs = accepted();
             auto holdFor = expr();
             accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().tokenEnd;
+            int posEnd = accepted().pos.end;
             return make_unique<Node>(
                 NT_HOLD, HoldValue(move(itemNode), move(holdFor), holdAs),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
-        throw err::SnowlangException(
-            current(),
-            err::EXPECTED_FIRST_OF_INSTRUCTION);
+        throw err::LexerParserException(
+            current().pos, err::EXPECTED_FIRST_OF_INSTRUCTION);
     }
 
     unique_ptr<Node> Parser::item()
     {
         accept(TT_IDEN, err::EXPECTED_IDEN);
-        int posStart = accepted().tokenStart;
+        int posStart = accepted().pos.start;
         auto identifier = accepted();
         unique_ptr<Node> index = nullptr;
         if (accept(TT_LBRACK)) // Optional indexing
@@ -336,16 +346,16 @@ namespace snowlang::parser
             accept(TT_RBRACK, err::EXPECTED_RBRACK);
         }
         unique_ptr<Node> next = nullptr;
-        int posEnd = accepted().tokenEnd;
+        int posEnd = accepted().pos.end;
         if (accept(TT_PERIOD)) // Optional member access
         {
             next = item();
-            posEnd = next->posEnd;
+            posEnd = next->pos.end;
         }
         return make_unique<Node>(
             NT_ITEM,
             ItemValue(identifier, move(index), move(next)),
-            posStart, posEnd);
+            Pos(posStart, posEnd, fileIndex));
     }
 
     unique_ptr<Node> Parser::expr()
@@ -389,13 +399,13 @@ namespace snowlang::parser
         if (accept({TT_PLUS, TT_MINUS, TT_NOT}))
         {
             auto operationToken = accepted();
-            int posStart = accepted().tokenStart;
+            int posStart = accepted().pos.start;
             auto node = factor();
-            int posEnd = node->posEnd;
+            int posEnd = node->pos.end;
             return make_unique<Node>(
                 NT_UNOP,
                 UnOpValue(move(node), operationToken),
-                posStart, posEnd);
+                Pos(posStart, posEnd, fileIndex));
         }
         return parseBinOp(
             {TT_POW}, [this]()
@@ -410,13 +420,15 @@ namespace snowlang::parser
         {
             return make_unique<Node>(
                 NT_LEAF, LeafValue(accepted()),
-                accepted().tokenStart, accepted().tokenEnd);
+                Pos(accepted().pos.start,
+                    accepted().pos.end,
+                    fileIndex));
         }
         else if (accept(TT_IDEN))
         {
             auto identifier = accepted();
-            int posStart = accepted().tokenStart;
-            int posEnd = accepted().tokenEnd;
+            int posStart = accepted().pos.start;
+            int posEnd = accepted().pos.end;
             if (accept(TT_LPAREN)) // is function call
             {
                 vector<unique_ptr<Node>> args;
@@ -428,15 +440,16 @@ namespace snowlang::parser
                     } while (accept(TT_COMMA));
                     accept(TT_RPAREN, err::EXPECTED_RPAREN);
                 }
-                posEnd = accepted().tokenEnd;
+                posEnd = accepted().pos.end;
                 return make_unique<Node>(
                     NT_FUNCCALL,
                     FuncCallValue(identifier, move(args)),
-                    posStart, posEnd);
+                    Pos(posStart, posEnd, fileIndex));
             }
             else // is variable
                 return make_unique<Node>(
-                    NT_LEAF, LeafValue(identifier), posStart, posEnd);
+                    NT_LEAF, LeafValue(identifier),
+                    Pos(posStart, posEnd, fileIndex));
         }
         accept(TT_LPAREN, err::EXPECTED_FIRST_OF_ATOM);
         auto node = expr();
@@ -461,7 +474,7 @@ namespace snowlang::parser
             left = make_unique<Node>(
                 NT_BINOP,
                 BinOpValue(move(left), move(right), operationToken),
-                left->posStart, right->posEnd);
+                Pos(left->pos.start, right->pos.end, fileIndex));
         }
         return left;
     }
@@ -470,7 +483,8 @@ namespace snowlang::parser
     {
         auto res = script();
         if (pos < tokens.size() - 1)
-            throw err::SnowlangException(current(), err::EXPECTED_EOI);
+            throw err::LexerParserException(
+                current().pos, err::EXPECTED_EOI);
         return res;
     }
 }

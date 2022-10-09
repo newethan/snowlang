@@ -1,0 +1,128 @@
+mod AdderSubstractor (bits)
+{
+    # input
+    let or a[bits];
+    let or b[bits];
+    let or cin;  # carry in
+    let or sub;  # signal to subtract instead of add.
+
+    # output
+    let xor sum[bits];
+    let or cout;  # carry out
+
+    # invert a if subtract mode
+    let xor inv_a[bits];
+    con a inv_a;
+    for i in (0, bits - 1)
+    {
+        con sub inv_a[i];
+    }
+
+    # first array  half adders
+    let xor ab_sum[bits];
+    let and ab_cout[bits];
+    con a ab_sum;
+    con b ab_sum;
+    con inv_a ab_cout;
+    con b ab_cout;
+
+    # invert ab_sum if subtract mode
+    let xor inv_ab_sum[bits];
+    con ab_sum inv_ab_sum;
+    for i in (0, bits - 1)
+    {
+        con sub inv_ab_sum[i];
+    }
+
+    # second half adder
+    # sum of second half adder is `sum` from output section.
+    let and cin_ab_cout[bits];
+    con ab_sum sum;
+    con inv_ab_sum cin_ab_cout;
+
+    # connect cout of each other to cin of next
+    let or fulladder_cout[bits];
+    con ab_cout fulladder_cout;
+    con cin_ab_cout fulladder_cout;
+
+    con cin sum[0];
+    con cin cin_ab_cout[0];
+    for i in (0, bits - 2)
+    {
+        con fulladder_cout[i] sum[i + 1];
+        con fulladder_cout[i] cin_ab_cout[i + 1];
+    }
+    con fulladder_cout[bits - 1] cout;
+
+}
+
+mod ALU (bits)
+{
+    # input
+    let or a[bits];
+    let or b[bits];
+    let or op_byte[bits];
+
+    # output
+    let or out[bits];
+
+    # internal modules
+    # need and gates for output of each internal module
+    # to be able to toggle module output on and off
+    # (global ALU output or's all these toggled outputs
+    #  And only one should be toggled on at a time)
+
+    let AdderSubstractor(bits) as;
+    let and as_out[bits];
+    con a as.a;
+    con b as.b;
+    con as.sum as_out;
+    for i in (0, bits - 1)
+    {
+        con op_byte[0] as_out[i];
+    }
+    con as_out out;
+
+    let or or_module[bits];
+    let and or_out[bits];
+    con a or_module;
+    con b or_module;
+    con or_module or_out;
+    for i in (0, bits - 1)
+    {
+        con op_byte[1] or_out[i];
+    }
+    con or_out out;
+
+    let and and_module[bits];
+    let and and_out[bits];
+    con a and_module;
+    con b and_module;
+    con and_module and_out;
+    for i in (0, bits - 1)
+    {
+        con op_byte[2] and_out[i];
+    }
+    con and_out out;
+
+    let xor xor_module[bits];
+    let and xor_out[bits];
+    con a xor_module;
+    con b xor_module;
+    con xor_module xor_out;
+    for i in (0, bits - 1)
+    {
+        con op_byte[3] xor_out[i];
+    }
+    con xor_out out;
+
+    let nor not_module[bits];
+    let and not_out[bits];
+    con a not_module;
+    con not_module not_out;
+    for i in (0, bits - 1)
+    {
+        con op_byte[4] not_out[i];
+    }
+    con not_out out;
+}

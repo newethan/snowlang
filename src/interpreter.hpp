@@ -56,18 +56,33 @@ namespace snowlang::interpreter
     class Interpreter
     {
     public:
-        Interpreter(std::unique_ptr<Node> t_ast)
-            : m_ast(std::move(t_ast)) {}
+        Interpreter(std::unique_ptr<Node> t_ast, const std::string &filename, const std::string &text)
+            : m_ast(std::move(t_ast))
+        {
+            importedFiles.push_back(filename);
+            files.push_back(text);
+        }
         void interpret();
 
     private:
         std::unique_ptr<Node> m_ast;
 
-        std::vector<std::string> buildStack;
+        std::vector<std::string> buildStack;    // build call stack
+        std::vector<std::string> importStack;   // import call stack
+        std::vector<std::string> importedFiles; // filenames
+        std::vector<std::string> files;         // file contents
+
+        inline void error(Pos pos, const std::string &message)
+        {
+            throw err::InterpreterException(
+                importedFiles[pos.fileIndex],
+                files[pos.fileIndex],
+                pos, message);
+        }
 
         std::unique_ptr<Module> buildModule(
             Context &ctx,
-            std::string typeName, int posStart, int posEnd,
+            std::string typeName, Pos pos,
             const std::vector<std::unique_ptr<Node>> &args =
                 std::vector<std::unique_ptr<Node>>());
 
@@ -103,6 +118,8 @@ namespace snowlang::interpreter
             const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitFuncCall(
             const std::unique_ptr<Node> &node, Context &ctx);
+        NodeReturnType visitImport(
+            const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitMod(
             const std::unique_ptr<Node> &node, Context &ctx);
         NodeReturnType visitVarAssign(
@@ -116,7 +133,7 @@ namespace snowlang::interpreter
 
         // Assumes string's first and last characters are `"`.
         void printStrlit(
-            Context &ctx, std::string &strlit, int strPosStart,
+            Context &ctx, Token strlit,
             std::vector<std::unique_ptr<Node>> &expressions);
     };
 }

@@ -1,0 +1,130 @@
+import "multiplexer.sno";
+
+mod Reg (bits)
+{
+    # input
+    let and data[bits];
+    let and set;
+    let and read;
+
+    # output
+    let and out[bits];
+
+    # memory
+    let xor mem[bits];
+    con mem mem;
+
+    # reset
+    let and reset[bits];
+    con mem reset;
+    con reset mem;
+
+    # set
+    con data mem;
+    for i in (0, bits - 1)
+    {
+        con set data[i];
+        con set reset[i];
+    }
+
+    # read
+    con mem out;
+    for i in (0,  bits - 1)
+    {
+        con read out[i];
+    }
+}
+
+mod SncomputerRegs (bits, stackp_bits)
+{
+    # general purpose registers A-K
+    let Reg(bits) a; # bin 0000
+    let Reg(bits) b; # bin 0001
+    let Reg(bits) c; # bin 0010
+    let Reg(bits) d; # bin 0011
+    let Reg(bits) e; # bin 0100
+    let Reg(bits) f; # bin 0101
+    let Reg(bits) g; # bin 0110
+    let Reg(bits) h; # bin 0111
+    let Reg(bits) i; # bin 1000
+    let Reg(bits) j; # bin 1001
+    let Reg(bits) k; # bin 1010
+    # alu output register
+    let Reg(bits) l; # bin 1011
+    # general purpose bit register
+    let Reg(1) q; # bin 1100
+    # equality flag
+    let Reg(1) eq; # bin 1101
+    # less than flag
+    let Reg(1) lt; # bin 1110
+    # greater than than flag
+    let Reg(1) gt; # bin 1111
+
+    let Multiplexer(4) mult; # 16 registers - 4 bits
+    con mult.board[0] a.read;
+    con mult.board[0] a.set;
+    con mult.board[1] b.read;
+    con mult.board[1] b.set;
+    con mult.board[2] c.read;
+    con mult.board[2] c.set;
+    con mult.board[3] d.read;
+    con mult.board[3] d.set;
+    con mult.board[4] e.read;
+    con mult.board[4] e.set;
+    con mult.board[5] f.read;
+    con mult.board[5] f.set;
+    con mult.board[6] g.read;
+    con mult.board[6] g.set;
+    con mult.board[7] h.read;
+    con mult.board[7] h.set;
+    con mult.board[8] i.read;
+    con mult.board[8] i.set;
+    con mult.board[9] j.read;
+    con mult.board[9] j.set;
+    con mult.board[10] k.read;
+    con mult.board[10] k.set;
+    con mult.board[11] l.read;
+    con mult.board[11] l.set;
+    con mult.board[12] q.read;
+    con mult.board[12] q.set;
+    con mult.board[13] eq.read;
+    con mult.board[13] eq.set;
+    con mult.board[14] lt.read;
+    con mult.board[14] lt.set;
+    con mult.board[15] gt.read;
+    con mult.board[15] gt.set;
+
+    # internal registers
+    let Reg(bits) ip1; # 1st instruction parameter
+    let Reg(bits) ip2; # 2nd instruction parameter
+    let Reg(stackp_bits) stackp; # stack pointer
+    # (stackp_bits bits - 2**stackp_bits bytes in stack!)
+    let Reg(bits) stepc; # step counter
+    # (pointer to address in memory of current instruction)
+}
+
+mod Ram (bits)
+{
+    # input
+    let or address[bits];
+    let or data[bits];
+    let or set;
+    let or read;
+
+    # output
+    let or out[bits];
+
+    let Multiplexer(bits) mult;
+    let Reg(bits) regs[2**bits];
+    con address mult.address;
+
+    for i in (0, 2**bits - 1)
+    {
+        con set regs[i].set;
+        con read regs[i].read;
+        con mult.board[i] regs[i].set;
+        con mult.board[i] regs[i].read;
+        con regs[i].out out;
+        con data regs[i].data;
+    }
+}

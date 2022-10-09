@@ -171,7 +171,8 @@ namespace snowlang
             return std::to_string(getFloat());
     }
 
-    void SymbolTable::setSymbol(const std::string &name, SymbolValueType value)
+    std::string SymbolTable::setSymbol(
+        const std::string &name, SymbolValueType value)
     {
         SymbolTable *symbolTable = this;
         auto mapToUpdate = &m_symbols;
@@ -186,20 +187,26 @@ namespace snowlang
             }
             symbolTable = symbolTable->parent;
         }
-
+        // Make sure that symbol is modifiable()
+        if ((*mapToUpdate).count(name) > 0)
+        {
+            auto &value = (*mapToUpdate)[name];
+            if (std::holds_alternative<ModuleDeclaration>(value) ||
+                std::holds_alternative<FunctionDeclaration>(value))
+                return err::REDECL(name);
+        }
         (*mapToUpdate)[name] = std::move(value);
+        return err::NOERR;
     }
 
-    SymbolValueType &SymbolTable::lookup(
-        const std::string &name, int posStart, int posEnd)
+    SymbolValueType *SymbolTable::lookup(const std::string &name)
     {
         for (auto &entry : m_symbols)
-            if (entry.first == name) // names match
-                return entry.second; // return assigned value
+            if (entry.first == name)  // names match
+                return &entry.second; // return assigned value
         if (parent)
-            return parent->lookup(name, posStart, posEnd);
-        throw err::SnowlangException(
-            posStart, posEnd, err::IDENTIFIER_UNDEFINED(name));
+            return parent->lookup(name);
+        return nullptr;
     }
 
     SymbolTable *SymbolTable::firstAncestor()

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "token.hpp"
+#include "node.hpp"
 
 #pragma once
 
@@ -25,20 +26,15 @@ namespace snowlang::err
     const std::string EXPECTED_FIRST_OF_ATOM =
         "Parsing error: Expected number, variable (identifier),"
         " function call, '+', '-' or '('.";
-    const std::string EXPECTED_FIRST_OF_COND_FACTOR =
-        "Parsing error: Expected 'true', 'false', 'not' or '('.";
     const std::string EXPECTED_FIRST_OF_INSTRUCTION =
         "Parsing error: Expected 'let', 'con', 'for', 'while', 'break',"
         " 'continue', 'return' , 'if' or identifier.";
-    const std::string EXPECTED_COMPARISON =
-        "Parsing error: Expected '>', '>=', '==', '<=' or '<'.";
     const std::string EXPECTED_EOI =
-        "Parsing error: Unexpected token, expected end of input here.";
+        "Parsing error: Unexpected token.";
     const std::string EXPECTED_INT = "Parsing error: Expected integer.";
     const std::string EXPECTED_IDEN = "Parsing error: Expected identifier.";
     const std::string EXPECTED_IN = "Parsing error: Expected 'in'.";
-    const std::string EXPECTED_PUBLIC = "Parsing error: Expected 'public:'.";
-    const std::string EXPECTED_PRIVATE = "Parsing error: Expected 'private:'.";
+    const std::string EXPECTED_STRLIT = "Parsing error: Expected string literal.";
 
     // Interpretation errors
     inline const std::string IDENTIFIER_UNDEFINED(
@@ -132,6 +128,8 @@ namespace snowlang::err
         "outside 'runtime' function";
     const std::string CIRCULAR_CONSTRUCTION =
         "Runtime error: Cannot construct module using itself.";
+    const std::string CIRCULAR_IMPORT =
+        "Runtime error: File cannot import itself.";
     inline const std::string ITEM_VALUE_WRONG_SIZE(
         int expected, int got)
     {
@@ -153,35 +151,51 @@ namespace snowlang::err
     }
     const std::string OBJECT_VALUE_ONE_OR_ZERO =
         "Runtime error: Object value must be made up of '0' and '1'.";
+    inline std::string FILE_NOT_FOUND(const std::string &filename)
+    {
+        std::string buf;
+        buf += "Runtime error: File '";
+        buf += filename;
+        buf += "' not found.";
+        return buf;
+    }
+    inline std::string REDECL(const std::string &name)
+    {
+        std::string buf;
+        buf += "Runtime error: Redeclaration of module or function '";
+        buf += name;
+        buf += "'.";
+        return buf;
+    }
 
-    // Custom exception class
-    class SnowlangException : std::exception
+    // Lexer and parser exception
+    class LexerParserException : std::exception
     {
     public:
-        int posStart;
-        int posEnd;
+        Pos pos;
         std::string message;
 
-        SnowlangException(
-            int t_posStart,
-            int t_posEnd,
-            std::string t_message)
-            : posStart(t_posStart),
-              posEnd(t_posEnd),
-              message(t_message) {}
+        LexerParserException(
+            Pos t_pos, const std::string &t_message)
+            : pos(t_pos), message(t_message) {}
+    };
 
-        SnowlangException(
-            Token errorToken,
-            std::string t_message)
-            : posStart(errorToken.tokenStart),
-              posEnd(errorToken.tokenEnd),
+    // Interpreter exception
+    class InterpreterException : std::exception
+    {
+    public:
+        Pos pos;
+        std::string filename, text, message;
+
+        InterpreterException(
+            const std::string &t_filename, const std::string &t_text,
+            Pos t_pos, const std::string &t_message)
+            : pos(t_pos), filename(t_filename), text(t_text),
               message(t_message) {}
     };
 
     void fatalErrorAbort(
-        const std::string &text,
-        const std::string &filename,
-        int posStart,
-        int posEnd,
+        Pos pos,
+        const std::string &filename, const std::string &text,
         const std::string &message);
 }

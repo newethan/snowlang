@@ -100,11 +100,11 @@ namespace snowlang
     public:
         SymbolTable(SymbolTable *t_parent) : parent(t_parent) {}
         SymbolTable() = default;
-        void setSymbol(const std::string &name, SymbolValueType value);
-        SymbolValueType &lookup(
-            const std::string &name,
-            int posStart,
-            int posEnd);
+
+        // returns error or err::NOERR if there's no error
+        std::string setSymbol(
+            const std::string &name, SymbolValueType value);
+        SymbolValueType *lookup(const std::string &name);
         SymbolTable *firstAncestor();
 
     private:

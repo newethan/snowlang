@@ -1,6 +1,8 @@
 [V] add support for expressions within string literals
 [V] remove need for '<' and '>' when printing objects.
-[] allow inclusion of other .sno files.
+[V] allow inclusion of other .sno files.
 [V] allow modules to take parameters.
 [V] allow module creation to omit parenthesis.
 [V] refactor lexer for optimization
+[V] fix bug where wrong file is reported for runtime errors in imported files
+    because only body node is stored and not filename

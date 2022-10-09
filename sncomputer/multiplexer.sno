@@ -1,0 +1,27 @@
+mod Multiplexer (bits)
+{
+    # input
+    let or address[bits];
+
+    # output
+    let and board[2**bits];
+
+    # negate address
+    let nor neg[bits];
+    con address neg;
+
+    for i in (0, 2**bits - 1)
+    {
+        for j in (0, bits - 1)
+        {
+            if i % 2**(j+1) < 2**(j+1) / 2
+            {
+                con neg[j] board[i];
+            }
+            else
+            {
+                con address[j] board[i];
+            }
+        }
+    }
+}
