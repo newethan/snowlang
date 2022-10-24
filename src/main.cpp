@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     string filename = argv[1];
+
     fstream file;
     file.open(filename, ios::in);
     if (!file)

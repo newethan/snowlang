@@ -51,7 +51,9 @@ namespace snowlang::interpreter
         ModuleDeclaration,
         FunctionDeclaration,
         LogicGate *,
-        std::vector<LogicGate> *>;
+        std::vector<LogicGate> *,
+        Module *,
+        std::vector<std::unique_ptr<Module>> *>;
 
     class Interpreter
     {
@@ -135,5 +137,6 @@ namespace snowlang::interpreter
         void printStrlit(
             Context &ctx, Token strlit,
             std::vector<std::unique_ptr<Node>> &expressions);
+        void printObject(const NodeReturnType &object, size_t indent = 0);
     };
 }

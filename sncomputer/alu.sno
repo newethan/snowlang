@@ -4,7 +4,8 @@ mod AdderSubstractor (bits)
     let or a[bits];
     let or b[bits];
     let or cin;  # carry in
-    let or sub;  # signal to subtract instead of add.
+    let xor sub;  # signal to subtract instead of add.
+    con sub sub;
 
     # output
     let xor sum[bits];

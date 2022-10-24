@@ -24,6 +24,8 @@ namespace snowlang::lexer
 
     char Lexer::peek(int offset)
     {
+        if (pos + offset >= text.length())
+            return '\0';
         return text[pos + offset];
     }
 
@@ -166,11 +168,20 @@ namespace snowlang::lexer
         // until next '"" or newline
         while (peek() != '"')
         {
-            if (peek() == '\n')
+            if (peek() == '\n' || peek() == '\0')
                 throw err::LexerParserException(
                     Pos(tokenStart, tokenStart, fileIndex),
                     err::COULD_NOT_MAKE_TOKEN);
-            strlit += peek();
+
+            // escape \""
+            if (peek() == '\\')
+            {
+                advance();
+                strlit += "\\";
+                strlit += peek();
+            }
+            else
+                strlit += peek();
             advance();
         }
 

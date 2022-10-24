@@ -42,7 +42,7 @@ namespace snowlang::err
     void fatalErrorAbort(
         Pos pos,
         const std::string &filename, const std::string &text,
-        const std::string &message)
+        const std::string &message, bool shouldExit)
     {
         // Get line number and line as a string
         int lineNumber = countChar(text, 0, pos.start, '\n') + 1;
@@ -54,6 +54,10 @@ namespace snowlang::err
             lineEnd = text.length() - 1;
         string line = text.substr(lineBegin, lineEnd - lineBegin + 1);
         int posInLine = pos.start - lineBegin;
+        if (posInLine > lineEnd)
+        {
+            line.append(posInLine - lineEnd, ' ');
+        }
 
         // Print error message
         cout << "\033[31m"
@@ -90,6 +94,7 @@ namespace snowlang::err
             cout << "^";
         }
         cout << endl;
-        exit(1);
+        if (shouldExit)
+            exit(1);
     }
 }

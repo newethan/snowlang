@@ -19,7 +19,7 @@ mod Timer (ticks)
         let or buf[ticks - 1];
         if ticks - 1 > 1
         {
-            for i in (0, tick - 2)
+            for i in (0, ticks - 3)
             {
                 con buf[i] buf[i+1];
             }
@@ -40,8 +40,90 @@ mod TickExtender (ticks)
     con mem buf;
     con mem sig_to_timer;
     con buf sig_to_timer;
-    
     let Timer(ticks - 2) t;
     con sig_to_timer t.inp;
     con t.out mem;
+}
+
+mod Word (bits)
+{
+    let and word[bits];
+}
+
+mod Selector (bits, options)
+{
+    # input
+    let or select[options];
+    let Word(bits) words[options];
+
+    # output
+    let or out[bits];
+
+    # selection memory
+    let xor selection[options];
+    con selection selection;
+
+    # set
+    let or set[options];
+    con select set;
+    con set selection;
+
+    # reset
+    let or reset[options];
+    let and t_reset[options];
+    con selection t_reset;
+    con reset t_reset;
+    con t_reset selection;
+
+    for i in (0, options - 1)
+    {
+        for j in (0, options - 1)
+        {
+            con select[i] reset[j];
+        }
+    }
+
+    # connect to output
+    for i in (0, options - 1)
+    {
+        con words[i].word out;
+    }
+
+    # connect selection to word and gates to enable and disable words
+    for i in (0, options - 1)
+    {
+        for j in (0, bits - 1)
+        {
+            con selection[i] words[i].word[j];
+        }
+    }
+}
+
+mod BinSelector (bits)
+{
+    # input
+    let Word(bits) words[2];
+    let xor option;
+    con option option;
+
+    # output
+    let or out[bits];
+
+    # neg of option
+    let nor neg_option;
+    con option neg_option;
+
+    # enabling words 
+    for i in (0, bits - 1)
+    {
+        con option words[0].word[i];
+        con neg_option words[1].word[i];
+    }
+
+
+    # connect words to out
+    for i in (0, 1)
+    {
+        con words[i].word out;
+    }
 }

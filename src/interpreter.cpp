@@ -21,23 +21,81 @@ namespace snowlang::interpreter
         // Build module 'Main'.
         globalModule = buildModule(ctx, "Main", Pos());
 
-        // Look up runtime function
-        std::string name = "runtime";
-        auto runtimeSymbol = globalSymbolTable.lookup(name);
-        if (!runtimeSymbol)
-            error(Pos(), err::IDENTIFIER_UNDEFINED(name));
-        if (!std::holds_alternative<FunctionDeclaration>(*runtimeSymbol))
-            error(Pos(), err::DOES_NOT_NAME_FUNCTION);
-        auto &runtimeFunction =
-            std::get<FunctionDeclaration>(*runtimeSymbol);
-
-        // Execute runtime function
+        // runtime symbol table and context
         SymbolTable runtimeSymbolTable(&globalSymbolTable);
+        runtimeSymbolTable.setSymbol(
+            "num_gates",
+            Number((int)globalModule->numGates()));
+        runtimeSymbolTable.setSymbol(
+            "num_connections",
+            Number((int)globalModule->numConnections()));
         Context runtimeCtx(runtimeSymbolTable, *globalModule);
         runtimeCtx.inRuntime = true;
         runtimeCtx.inFunction = true;
-        visit(runtimeFunction.bodyNode, runtimeCtx);
-    };
+
+        // Look up runtime function
+        std::string name = "runtime";
+        auto runtimeSymbol = globalSymbolTable.lookup(name);
+        if (runtimeSymbol) // runtime defined
+        {
+            if (!std::holds_alternative<FunctionDeclaration>(*runtimeSymbol))
+                error(Pos(), err::DOES_NOT_NAME_FUNCTION);
+            auto &runtimeFunction =
+                std::get<FunctionDeclaration>(*runtimeSymbol);
+
+            // Execute runtime function
+            visit(runtimeFunction.bodyNode, runtimeCtx);
+        }
+        else // runtime undefined - take runtime instructions from console
+        {
+            std::cout << "'runtime' function undefined."
+                      << " Taking runtime instructions from console"
+                      << std::endl;
+            std::cout << "Type `quit` to quit" << std::endl;
+            while (true)
+            {
+                const std::string filename = "<stdin>";
+                std::string text, buf;
+                std::cout << "> ";
+                while (true)
+                {
+                    std::getline(std::cin, buf);
+                    text += buf;
+                    if (text.length() > 0 && text.back() == '\\')
+                        text.pop_back();
+                    else
+                        break;
+                }
+                if (text == "quit")
+                    break;
+                importedFiles.push_back(filename);
+                files.push_back(text);
+                try
+                {
+                    // Lex it
+                    lexer::Lexer l(text, importedFiles.size() - 1);
+                    auto tokens = l.lex();
+
+                    // Parse it
+                    parser::Parser p(tokens, importedFiles.size() - 1);
+                    auto ast = p.parseInstruction();
+
+                    // Interpret it
+                    visit(ast, runtimeCtx);
+                }
+                catch (err::LexerParserException &e)
+                {
+                    err::fatalErrorAbort(e.pos, filename, text, e.message, false);
+                }
+                catch (err::InterpreterException &e)
+                {
+                    err::fatalErrorAbort(e.pos, e.filename, e.text, e.message, false);
+                }
+                importedFiles.pop_back();
+                files.pop_back();
+            }
+        }
+    }
 
     std::unique_ptr<Module> Interpreter::buildModule(
         Context &ctx,
@@ -269,6 +327,8 @@ namespace snowlang::interpreter
                                 index));
                     }
                     currModule = currModule->moduleArrays[currIden][index].get();
+                    if (!value.next)
+                        return currModule;
                 }
                 else
                     error(
@@ -295,17 +355,18 @@ namespace snowlang::interpreter
                 else if (currModule->modules.count(currIden) > 0)
                 {
                     currModule = currModule->modules[currIden].get();
+                    if (!value.next)
+                        return currModule;
                 }
                 else if (currModule->moduleArrays.count(currIden) > 0)
                 {
                     if (value.next)
                         error(
                             value.next->pos, err::NO_MEMBER_TO_ACCESS);
+                    return &currModule->moduleArrays[currIden];
                 }
                 else
-                {
                     error(value.identifier.pos, err::MEMBER_UNDEFINED);
-                }
             }
             item = value.next.get();
         }
@@ -385,8 +446,19 @@ namespace snowlang::interpreter
         if (ctx.inFunction)
             error(node->pos, err::LOGIC_INSIDE_FUNCTION);
         auto &value = std::get<ConValue>(node->value);
+
+        // get left item
         auto left = visit(value.left, ctx);
+        // check left item is gate or array of gates
+        if (!std::holds_alternative<LogicGate *>(left) &&
+            !std::holds_alternative<std::vector<LogicGate> *>(left))
+            error(value.left->pos, err::OBJECT_TYPE_INCORRECT);
+        // get right item
         auto right = visit(value.right, ctx);
+        // check right item is gate or array of gates
+        if (!std::holds_alternative<LogicGate *>(right) &&
+            !std::holds_alternative<std::vector<LogicGate> *>(right))
+            error(value.right->pos, err::OBJECT_TYPE_INCORRECT);
         bool leftIsArray =
             std::holds_alternative<std::vector<LogicGate> *>(left);
         bool rightIsArray =
@@ -701,11 +773,21 @@ namespace snowlang::interpreter
     {
         auto &value = std::get<VarAssignValue>(node->value);
         auto symbolValue =
-            std::get<Number>(visit(value.expression, ctx));
-        auto errmsg = ctx.symbolTable.setSymbol(
-            value.identifier.value, symbolValue);
-        if (errmsg != err::NOERR)
-            error(value.identifier.pos, errmsg);
+            std::get<Number>(visit(value.rhs, ctx));
+        if (value.lhs) // no need to assign if lhs is nullptr
+        {
+            // make sure lhs is identifier token
+            if (value.lhs->type != NT_LEAF ||
+                std::get<LeafValue>(value.lhs->value).token.type !=
+                    TT_IDEN)
+                error(value.lhs->pos, err::EXPECTED_LVALUE);
+            auto identifier =
+                std::get<LeafValue>(value.lhs->value).token;
+            auto errmsg = ctx.symbolTable.setSymbol(
+                identifier.value, symbolValue);
+            if (errmsg != err::NOERR)
+                error(identifier.pos, errmsg);
+        }
         return std::monostate();
     }
 
@@ -722,26 +804,7 @@ namespace snowlang::interpreter
             if (ctx.inFunction && !ctx.inRuntime)
                 error(node->pos, err::LOGIC_INSIDE_FUNCTION);
             auto itemValue = visit(value.item, ctx);
-            if (std::holds_alternative<LogicGate *>(itemValue))
-            { // item is gate
-                auto gate = std::get<LogicGate *>(itemValue);
-                if (gate->active)
-                    std::cout << "1";
-                else
-                    std::cout << "0";
-            }
-            else // item is gate array
-            {
-                auto gateArray =
-                    std::get<std::vector<LogicGate> *>(itemValue);
-                for (auto &gate : *gateArray)
-                {
-                    if (gate.active)
-                        std::cout << "1";
-                    else
-                        std::cout << "0";
-                }
-            }
+            printObject(itemValue);
         }
         return std::monostate();
     }
@@ -846,58 +909,166 @@ namespace snowlang::interpreter
             // only try to parse escape sequqnce if current character
             // is `\` and another character exists before the
             // closing quote (`"`)
-            if (strlit.value[i] != '\\' ||
-                i + 1 >= strlit.value.length() - 1)
+            if (strlit.value[i] == '\\' &&
+                i + 1 < strlit.value.length() - 1)
             {
-                temp += strlit.value[i];
+                if (strlit.value[i + 1] == 'n')
+                { // newline escape sequence
+                    temp += '\n';
+                    i++;
+                }
+                else if (strlit.value[i + 1] == 't')
+                { // tab escapre sequence
+                    temp += '\t';
+                    i++;
+                }
+                else
+                {
+                    // if no escape sequence recognized, the `\` will
+                    // be ommitted. this can be thought of as if
+                    // escaping something besides any of the valid
+                    // escape sequences will just yield what was escaped.
+                    // e.g. "\g" in the string will become just "g"
+                    // and "\\" in the string will become "\".
+                    temp += strlit.value[i + 1];
+                    i++;
+                }
                 continue;
             }
-
-            // Try to build a number out of the escaped sequence.
-            // If the number is not empty, it will be treated as an
-            // index and the escape sequence will be replaced with
-            // the value of the expression with that index.
-            std::string number;
-            for (size_t j = i + 1; isdigit(strlit.value[j]); j++)
-                number += strlit.value[j];
-            if (!number.empty()) // Escape sequence is index
+            if (strlit.value[i] == '$' &&
+                i + 1 < strlit.value.length() - 1)
             {
-                int index = std::stoi(number);
-                if (index < 0 || (size_t)index > numExpressions - 1)
-                    error(
-                        Pos(strlit.pos.start + i,
-                            strlit.pos.start + i + number.size(),
-                            strlit.pos.fileIndex),
-                        err::INDEX_OUT_OF_BOUNDS(
-                            0, numExpressions - 1, index));
-                temp +=
-                    std::get<Number>(
-                        visit(expressions[index], ctx))
-                        .repr();
-                i += number.length();
+                // Try to build a number
+                // If the number is not empty, it will be treated as an
+                // index and the escape sequence will be replaced with
+                // the value of the expression with that index.
+                std::string number;
+                for (size_t j = i + 1; isdigit(strlit.value[j]); j++)
+                    number += strlit.value[j];
+                if (!number.empty()) // Escape sequence is index
+                {
+                    int index = std::stoi(number);
+                    if (index < 0 || (size_t)index > numExpressions - 1)
+                        error(
+                            Pos(strlit.pos.start + i,
+                                strlit.pos.start + i + number.size(),
+                                strlit.pos.fileIndex),
+                            err::INDEX_OUT_OF_BOUNDS(
+                                0, numExpressions - 1, index));
+                    temp +=
+                        std::get<Number>(
+                            visit(expressions[index], ctx))
+                            .repr();
+                    i += number.length();
+                    continue;
+                }
             }
-            else if (strlit.value[i + 1] == 'n') // newline escape sequence
-            {
-                temp += '\n';
-                i++;
-            }
-            else if (strlit.value[i + 1] == 't') // tab escapre sequence
-            {
-                temp += '\t';
-                i++;
-            }
-            else
-            {
-                // if no escape sequence recognized, the `\` will
-                // be ommitted. this can be thought of as if
-                // escaping something besides any of the valid
-                // escape sequences will just yield what was escaped.
-                // e.g. "\g" in the string will become just "g"
-                // and "\\" in the string will become "\".
-                temp += strlit.value[i + 1];
-                i++;
-            }
+            temp += strlit.value[i];
         }
         std::cout << temp;
+    }
+
+    void Interpreter::printObject(const NodeReturnType &object, size_t indent)
+    {
+        const std::string indentWith = "*** ";
+        std::string indenter;
+        for (size_t i = 0; i < indent; i++)
+            indenter += indentWith;
+        if (std::holds_alternative<LogicGate *>(object))
+        { // item is gate
+            auto gate = std::get<LogicGate *>(object);
+            if (gate->active)
+                std::cout << "1";
+            else
+                std::cout << "0";
+        }
+        else if (std::holds_alternative<
+                     std::vector<LogicGate> *>(object))
+        { // item is gate array
+            auto gateArray =
+                std::get<std::vector<LogicGate> *>(object);
+            // printed in reverse because gateArray[0] is the LSB
+            // and therefore should be on the right.
+            for (auto it = std::crbegin(*gateArray);
+                 it != std::crend(*gateArray); it++)
+            {
+                if ((*it).active)
+                    std::cout << "1";
+                else
+                    std::cout << "0";
+            }
+        }
+        else if (std::holds_alternative<Module *>(object))
+        { // item is module
+            auto mod = std::get<Module *>(object);
+            // print all fields of module
+            std::cout << indenter << "{" << std::endl;
+
+            // print gates
+            if (!mod->gates.empty())
+            {
+                std::cout << indenter << "Gates: " << std::endl;
+                for (auto &nameGate : mod->gates)
+                {
+                    std::cout << indenter << indentWith << nameGate.first << ": ";
+                    printObject(&nameGate.second);
+                    std::cout << std::endl;
+                }
+            }
+
+            // print gate arrays
+            if (!mod->gateArrays.empty())
+            {
+                std::cout << indenter << "Gate arrays: " << std::endl;
+                for (auto &nameGateArray : mod->gateArrays)
+                {
+                    std::cout << indenter << indentWith << nameGateArray.first << ": ";
+                    printObject(&nameGateArray.second);
+                    std::cout << std::endl;
+                }
+            }
+
+            // print modules
+            if (!mod->modules.empty())
+            {
+                std::cout << indenter << "Modules: " << std::endl;
+                for (auto &nameModule : mod->modules)
+                {
+                    std::cout << indenter << indentWith
+                              << nameModule.first << ": " << std::endl;
+                    printObject(nameModule.second.get(), indent + 1);
+                    std::cout << std::endl;
+                }
+            }
+
+            // print module arrays
+            if (!mod->moduleArrays.empty())
+            {
+                std::cout << indenter << "Module arrays: " << std::endl;
+                for (auto &nameModuleArray : mod->moduleArrays)
+                {
+                    std::cout << indenter << indentWith
+                              << nameModuleArray.first << ": " << std::endl;
+                    printObject(&nameModuleArray.second, indent + 1);
+                    std::cout << std::endl;
+                }
+            }
+
+            std::cout << indenter << "}" << std::endl;
+        }
+        else if (std::holds_alternative<
+                     std::vector<std::unique_ptr<Module>> *>(object))
+        { // item is module array
+
+            std::cout << indenter << "[" << std::endl;
+            auto &modArray = std::get<
+                std::vector<std::unique_ptr<Module>> *>(object);
+            for (size_t i = 0; i < modArray->size(); i++)
+            {
+                std::cout << indenter << i << ": " << std::endl;
+                printObject((*modArray)[i].get(), indent + 1);
+            }
+            std::cout << indenter << "]" << std::endl;
+        }
     }
 }

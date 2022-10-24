@@ -1,11 +1,29 @@
 import "multiplexer.sno";
 
-mod Reg (bits)
+mod Reg (bits, inc_dec, inp_or)
 {
     # input
     let and data[bits];
-    let and set;
-    let and read;
+    if inp_or
+    {
+        let or set;
+        let or read;
+        if inc_dec
+        {
+            let or inc;
+            let or dec;
+        }
+    }
+    else
+    {
+        let and set;
+        let and read;
+        if inc_dec
+        {
+            let and inc;
+            let and dec;
+        }
+    }
 
     # output
     let and out[bits];
@@ -33,74 +51,126 @@ mod Reg (bits)
     {
         con read out[i];
     }
+
+    # increment and decrement
+    if inc_dec
+    {
+        let xor inv_mem[bits];
+        let and flip[bits];
+        con flip mem;
+        con mem inv_mem;
+
+        if inp_or
+        {
+            for i in (0, bits - 1)
+            {
+                con dec inv_mem[i];
+                con inc flip[i];
+            }
+            con dec inc;
+        }
+        else
+        {
+            let or or_inc;
+            let or or_dec;
+            con inc or_inc;
+            con dec or_dec;
+
+            for i in (0, bits - 1)
+            {
+                con or_dec inv_mem[i];
+                con or_inc flip[i];
+            }
+            con or_dec or_inc;
+        }
+
+        for i in (1, bits - 1)
+        {
+            for j in (0, i - 1)
+            {
+                con inv_mem[j] flip[i];
+            }
+        }
+    }
 }
 
-mod SncomputerRegs (bits, stackp_bits)
+mod SncomputerRegs
+    (bits,stackp_bits, inst_bits, regid_bits, num_gen_purpose)
 {
-    # general purpose registers A-K
-    let Reg(bits) a; # bin 0000
-    let Reg(bits) b; # bin 0001
-    let Reg(bits) c; # bin 0010
-    let Reg(bits) d; # bin 0011
-    let Reg(bits) e; # bin 0100
-    let Reg(bits) f; # bin 0101
-    let Reg(bits) g; # bin 0110
-    let Reg(bits) h; # bin 0111
-    let Reg(bits) i; # bin 1000
-    let Reg(bits) j; # bin 1001
-    let Reg(bits) k; # bin 1010
+    # general purpose registers A-J
+    # bin 0000 - 1001
+    let Reg(bits, true, false) gen_purpose[num_gen_purpose];
     # alu output register
-    let Reg(bits) l; # bin 1011
+    let Reg(bits, false, false) l; # bin 1010
     # general purpose bit register
-    let Reg(1) q; # bin 1100
+    let Reg(1, false, false) q; # bin 1011
     # equality flag
-    let Reg(1) eq; # bin 1101
+    let Reg(1, false, false) eq; # bin 1100
     # less than flag
-    let Reg(1) lt; # bin 1110
+    let Reg(1, false, false) lt; # bin 1101
     # greater than than flag
-    let Reg(1) gt; # bin 1111
+    let Reg(1, false, false) gt; # bin 1110
+    # Ram address -
+    # pointer to address in memory of current instruction
+    let Reg(bits, true, false) ra; # bin 1111
 
-    let Multiplexer(4) mult; # 16 registers - 4 bits
-    con mult.board[0] a.read;
-    con mult.board[0] a.set;
-    con mult.board[1] b.read;
-    con mult.board[1] b.set;
-    con mult.board[2] c.read;
-    con mult.board[2] c.set;
-    con mult.board[3] d.read;
-    con mult.board[3] d.set;
-    con mult.board[4] e.read;
-    con mult.board[4] e.set;
-    con mult.board[5] f.read;
-    con mult.board[5] f.set;
-    con mult.board[6] g.read;
-    con mult.board[6] g.set;
-    con mult.board[7] h.read;
-    con mult.board[7] h.set;
-    con mult.board[8] i.read;
-    con mult.board[8] i.set;
-    con mult.board[9] j.read;
-    con mult.board[9] j.set;
-    con mult.board[10] k.read;
-    con mult.board[10] k.set;
-    con mult.board[11] l.read;
-    con mult.board[11] l.set;
-    con mult.board[12] q.read;
-    con mult.board[12] q.set;
-    con mult.board[13] eq.read;
-    con mult.board[13] eq.set;
-    con mult.board[14] lt.read;
-    con mult.board[14] lt.set;
-    con mult.board[15] gt.read;
-    con mult.board[15] gt.set;
+    let Multiplexer(regid_bits) mult;
+    for i in (0, num_gen_purpose - 1)
+    {
+        con mult.board[i] gen_purpose[i].read;
+        con mult.board[i] gen_purpose[i].set;
+        con mult.board[i] gen_purpose[i].inc;
+        con mult.board[i] gen_purpose[i].dec;
+    }
+    con mult.board[10] l.read;
+    con mult.board[10] l.set;
+    con mult.board[11] q.read;
+    con mult.board[11] q.set;
+    con mult.board[12] eq.read;
+    con mult.board[12] eq.set;
+    con mult.board[13] lt.read;
+    con mult.board[13] lt.set;
+    con mult.board[14] gt.read;
+    con mult.board[14] gt.set;
+    con mult.board[15] ra.read;
+    con mult.board[15] ra.set;
+    con mult.board[15] ra.inc;
+    con mult.board[15] ra.dec;
+
+    let or set;
+    let or read;
+    let or inc;
+    let or dec;
+    for i in (0, num_gen_purpose - 1)
+    {
+        con set gen_purpose[i].set;
+        con read gen_purpose[i].read;
+        con inc gen_purpose[i].inc;
+        con dec gen_purpose[i].dec;
+    }
+    con set l.set;
+    con read l.read;
+    con set q.set;
+    con read q.read;
+    con set eq.set;
+    con read eq.read;
+    con set lt.set;
+    con read lt.read;
+    con set gt.set;
+    con read gt.read;
+    con set ra.set;
+    con read ra.read;
+    con inc ra.inc;
+    con dec ra.dec;
+
 
     # internal registers
-    let Reg(bits) ip1; # 1st instruction parameter
-    let Reg(bits) ip2; # 2nd instruction parameter
-    let Reg(stackp_bits) stackp; # stack pointer
+    let Reg(inst_bits, false, true) instruction; # current instruction
+    let Reg(bits, false, true) ip1; # 1st instruction parameter
+    let Reg(bits, false, true) ip2; # 2nd instruction parameter
+    let Reg(stackp_bits, true, true) stackp; # stack pointer
     # (stackp_bits bits - 2**stackp_bits bytes in stack!)
-    let Reg(bits) stepc; # step counter
-    # (pointer to address in memory of current instruction)
+    let Reg(bits, true, true) stepc; # step counter
 }
 
 mod Ram (bits)
@@ -115,7 +185,7 @@ mod Ram (bits)
     let or out[bits];
 
     let Multiplexer(bits) mult;
-    let Reg(bits) regs[2**bits];
+    let Reg(bits, false, false) regs[2**bits];
     con address mult.address;
 
     for i in (0, 2**bits - 1)

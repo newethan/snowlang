@@ -6,3 +6,4 @@
 [V] refactor lexer for optimization
 [V] fix bug where wrong file is reported for runtime errors in imported files
     because only body node is stored and not filename
+[V] fix bug where objects printed right to left

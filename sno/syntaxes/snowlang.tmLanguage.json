@@ -28,7 +28,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.snowlang",
-				"match": "\\b(if|elif|else|while|for|in|return)\\b"
+				"match": "\\b(if|elif|else|while|for|in|break|continue|return)\\b"
 			},
 			{
 				"name" : "keyword.other.snowlang",

@@ -68,6 +68,36 @@ namespace snowlang
                 mod->update();
     }
 
+    size_t Module::numGates()
+    {
+        size_t num = 0;
+        num += gates.size();
+        for (auto &gateArray : gateArrays)
+            num += gateArray.second.size();
+        for (auto &mod : modules)
+            num += mod.second->numGates();
+        for (auto &modArray : moduleArrays)
+            for (auto &mod : modArray.second)
+                num += mod->numGates();
+        return num;
+    }
+
+    size_t Module::numConnections()
+    {
+        size_t num = 0;
+        for (auto &gate : gates)
+            num += gate.second.numConnected();
+        for (auto &gateArray : gateArrays)
+            for (auto &gate : gateArray.second)
+                num += gate.numConnected();
+        for (auto &mod : modules)
+            num += mod.second->numConnections();
+        for (auto &modArray : moduleArrays)
+            for (auto &mod : modArray.second)
+                num += mod->numConnections();
+        return num;
+    }
+
     bool Module::alreadyDefined(const std::string &identifier)
     {
         return (gates.count(identifier) +

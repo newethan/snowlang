@@ -10,7 +10,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/snowlang",
       "args": [
-        "/home/north/Desktop/projects/snowlang/sncomputer/sncomputer.sno"
+        "/home/north/Desktop/projects/snowlang/sncomputer/main.sno"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/sncomputer",

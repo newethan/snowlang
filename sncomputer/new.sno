@@ -1,0 +1,9 @@
+let printExpr (expr)
+{
+    print "\0", expr;
+    return expr;
+}
+
+mod Main {}
+
+let runtime () {}

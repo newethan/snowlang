@@ -22,7 +22,6 @@ namespace snowlang::err
     const std::string EXPECTED_RBRACE = "Parsing error: Expected '}'.";
     const std::string EXPECTED_COMMA = "Parsing error: Expected ','.";
     const std::string EXPECTED_SEMICOLON = "Parsing error: Expected ';'.";
-    const std::string EXPECTED_ASSIGN = "Parsing error: Expected '='.";
     const std::string EXPECTED_FIRST_OF_ATOM =
         "Parsing error: Expected number, variable (identifier),"
         " function call, '+', '-' or '('.";
@@ -167,6 +166,8 @@ namespace snowlang::err
         buf += "'.";
         return buf;
     }
+    const std::string EXPECTED_LVALUE =
+        "Runtime error: Expected lvalue (identifier)";
 
     // Lexer and parser exception
     class LexerParserException : std::exception
@@ -197,5 +198,5 @@ namespace snowlang::err
     void fatalErrorAbort(
         Pos pos,
         const std::string &filename, const std::string &text,
-        const std::string &message);
+        const std::string &message, bool shouldExit = true);
 }

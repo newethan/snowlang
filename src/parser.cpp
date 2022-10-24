@@ -122,13 +122,12 @@ namespace snowlang::parser
     unique_ptr<Node> Parser::block()
     {
         vector<unique_ptr<Node>> instructions;
-        while (accept(
-            {TT_LET, TT_CON, TT_IDEN, TT_FOR, TT_WHILE,
-             TT_BREAK, TT_CONTINUE, TT_IF, TT_RETURN,
-             TT_PRINT, TT_TICK, TT_HOLD}))
-        {
+        while (typeIs(
+                   {TT_LET, TT_CON, TT_FOR, TT_WHILE,
+                    TT_BREAK, TT_CONTINUE, TT_IF, TT_RETURN,
+                    TT_PRINT, TT_TICK, TT_HOLD}) ||
+               typeIs(FIRST_OF_EXPR))
             instructions.push_back(instruction());
-        }
         int posStart = 0, posEnd = 0;
         if (!instructions.empty()) // avoid undefined behavior
         {
@@ -143,6 +142,31 @@ namespace snowlang::parser
 
     unique_ptr<Node> Parser::instruction()
     {
+        if (typeIs(FIRST_OF_EXPR))
+        {
+            auto lhs = expr();
+            int posStart = lhs->pos.start;
+            if (accept(TT_ASSIGN))
+            {
+                auto rhs = expr();
+                accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+                int posEnd = accepted().pos.end;
+                // make sure lhs is just an identifier
+                return make_unique<Node>(
+                    NT_VARASSIGN,
+                    VarAssignValue(move(lhs), move(rhs)),
+                    Pos(posStart, posEnd, fileIndex));
+            }
+            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
+            int posEnd = accepted().pos.end;
+            return make_unique<Node>(
+                NT_VARASSIGN,
+                VarAssignValue(nullptr, move(lhs)),
+                Pos(posStart, posEnd, fileIndex));
+        }
+        accept({TT_LET, TT_CON, TT_FOR, TT_WHILE,
+                TT_BREAK, TT_CONTINUE, TT_IF, TT_RETURN,
+                TT_PRINT, TT_TICK, TT_HOLD});
         int posStart = accepted().pos.start;
         if (accepted().type == TT_LET)
         {
@@ -193,18 +217,6 @@ namespace snowlang::parser
             return make_unique<Node>(
                 NT_CON,
                 ConValue(move(left), move(right)),
-                Pos(posStart, posEnd, fileIndex));
-        }
-        else if (accepted().type == TT_IDEN)
-        {
-            auto identifier = accepted();
-            accept(TT_ASSIGN, err::EXPECTED_ASSIGN);
-            auto expression = expr();
-            accept(TT_SEMICOLON, err::EXPECTED_SEMICOLON);
-            int posEnd = accepted().pos.end;
-            return make_unique<Node>(
-                NT_VARASSIGN,
-                VarAssignValue(identifier, move(expression)),
                 Pos(posStart, posEnd, fileIndex));
         }
         else if (accepted().type == TT_FOR)
@@ -482,6 +494,15 @@ namespace snowlang::parser
     unique_ptr<Node> Parser::parse()
     {
         auto res = script();
+        if (pos < tokens.size() - 1)
+            throw err::LexerParserException(
+                current().pos, err::EXPECTED_EOI);
+        return res;
+    }
+
+    unique_ptr<Node> Parser::parseInstruction()
+    {
+        auto res = instruction();
         if (pos < tokens.size() - 1)
             throw err::LexerParserException(
                 current().pos, err::EXPECTED_EOI);

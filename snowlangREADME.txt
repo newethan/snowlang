@@ -1,4 +1,10 @@
-arithmetic operator precedence:
+This file gives a comprehensive overview of the snowlang standard.
+
+
+##################################
+# arithmetic operator precedence #
+##################################
+
 1. exponentiation
     `**` (POW)
 2. unary operators
@@ -12,6 +18,28 @@ arithmetic operator precedence:
 6. logical and
     `&` (AND)
 
+###########
+# grammar #
+###########
+Terminals are in all caps (e.g IDEN, SEMICOLON)
+Non-terminals are all lowercase (e.g instruction, arith_expr)
+Like in regex, (a capture group is a sequence enclosed in parenthesis)
+`*` - the previous capture group can be repeated 0 or more times.
+`+` - the previous capture group can be repeated 1 or more times.
+`?` - the previous capture group can be repeated 0 or 1 times.
+Footnotes are bellow the gramamr section.
+productions are formatted thusly:
+(nt is a non terminal, and sq(1), sq(2), ..., sq(n) are sequqnces of terminals and non-terminals)
+```
+nt
+    : sq(1)
+    : sq(2)
+    ...
+    : sq(n)
+    ;
+```
+
+
 script
     : (MOD LPAREN (IDEN (COMMA IDEN)*)? RPAREN IDEN LBRACE block RBRACE |
         LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE block RBRACE |
@@ -23,7 +51,6 @@ block
 instruction
     : LET IDEN (LPAREN (expr (COMMA expr)*)? RPAREN)? IDEN (LBRACK expr RBRACK)? SEMICOLON
     : CONNECT item item SEMICOLON
-    : IDEN ASSIGN expr SEMICOLON
     : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE block RBRACE
     : WHILE expr LBRACE block RBRACE
     : BREAK SEMICOLON
@@ -34,6 +61,7 @@ instruction
     : PRINT ((STRLIT (COMMA expr)*) | item) SEMICOLON
     : TICK expr SEMICOLON
     : HOLD item INT expr SEMICOLON
+    : expr (ASSIGN expr)? SEMICOLON     # footnote 1 #
     ;
 item
     : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*
@@ -68,7 +96,23 @@ atom
     : IDEN LPAREN (expr (COMMA expr)*)? RPAREN
     ;
 
-Regex of terminals:
+#####################
+# grammar footnotes #
+#####################
+1.  this production exists to keep the grammar LL(1) and allow
+    instructions to be both assignments and expressions followed by a ';';
+    if the productions were `instruction -> IDEN ASSIGN expr SEMICOLON`
+    and `instruction -> expr SEMICOLON`, then upon encountering an IDEN
+    at the beginning of an instruction, the parser would not know which
+    production to use. (That is because an expression can also start with
+    an IDEN). The production `instruction -> expr (ASSIGN expr)? SEMICOLON`
+    allows both to be parsed correctly and unambiguously, but allows odd
+    syntax such as `1 + 2 = 4;`. This is of course corrected semantically
+    and left-hand expressions of assignments much be the name of a variable.
+
+#######################
+# regex of terminals: #
+#######################
 
 skipped terminals:
     WHITESPACE : \s+

@@ -6,6 +6,9 @@
 
 namespace snowlang::parser
 {
+    const std::unordered_set<TokenType> FIRST_OF_EXPR =
+        {TT_INT, TT_FLOAT, TT_IDEN, TT_PLUS, TT_MINUS, TT_LPAREN};
+
     struct Parser
     {
         const std::vector<Token> &tokens;
@@ -15,6 +18,12 @@ namespace snowlang::parser
             : tokens(t_tokens), fileIndex(t_fileIndex) {}
 
         std::unique_ptr<Node> parse();
+        std::unique_ptr<Node> parseInstruction();
+
+    private:
+        size_t fileIndex;
+
+        Token m_acceptedToken;
 
         inline Token current() { return tokens[pos]; }
 
@@ -40,11 +49,6 @@ namespace snowlang::parser
         {
             return m_acceptedToken;
         }
-
-    private:
-        size_t fileIndex;
-
-        Token m_acceptedToken;
         std::unique_ptr<Node> script();
         std::unique_ptr<Node> block();
         std::unique_ptr<Node> instruction();

@@ -40,6 +40,10 @@ namespace snowlang
             active = value;
             m_holdFor = holdFor;
         }
+        inline size_t numConnected()
+        {
+            return m_dependencies.size();
+        }
 
     private:
         std::vector<LogicGate *> m_dependencies;
@@ -75,6 +79,8 @@ namespace snowlang
 
         void generateNextValue();
         void update();
+        size_t numGates();
+        size_t numConnections();
 
         bool alreadyDefined(const std::string &identifier);
     };

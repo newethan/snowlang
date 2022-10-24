@@ -219,14 +219,15 @@ namespace snowlang
 
     struct VarAssignValue
     {
-        Token identifier;
-        std::unique_ptr<Node> expression;
+        // expected lhs is leaf node with iden token
+        // if lhs is nullptr then rhs will simply be
+        // evaluated and not assigned to any variable
+        std::unique_ptr<Node> lhs;
+        std::unique_ptr<Node> rhs;
 
         VarAssignValue(
-            Token t_identifier,
-            std::unique_ptr<Node> t_expression)
-            : identifier(t_identifier),
-              expression(std::move(t_expression)) {}
+            std::unique_ptr<Node> t_lhs, std::unique_ptr<Node> t_rhs)
+            : lhs(std::move(t_lhs)), rhs(std::move(t_rhs)) {}
     };
 
     struct PrintValue
