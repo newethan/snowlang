@@ -44,7 +44,7 @@ namespace snowlang::interpreter
                 std::get<FunctionDeclaration>(*runtimeSymbol);
 
             // Execute runtime function
-            visit(runtimeFunction.bodyNode, runtimeCtx);
+            visit(runtimeFunction.body, runtimeCtx);
         }
         else // runtime undefined - take runtime instructions from console
         {
@@ -121,15 +121,7 @@ namespace snowlang::interpreter
         auto mod = std::make_unique<Module>();
         auto buildSymbolTable =
             SymbolTable(ctx.symbolTable.firstAncestor());
-        if (args.size() != moduleDecl.args.size())
-            error(pos, err::MOD_WRONG_ARG_NUM(
-                           moduleDecl.args.size(), args.size()));
-        for (size_t i = 0; i < args.size(); i++)
-        {
-            buildSymbolTable.setSymbol(
-                moduleDecl.args[i],
-                std::get<Number>(visit(args[i], ctx)));
-        }
+        populateArgs(ctx, buildSymbolTable, moduleDecl.args, args, pos);
 
         Context buildCtx(buildSymbolTable, *mod);
         visit(moduleDecl.body, buildCtx);
@@ -649,10 +641,9 @@ namespace snowlang::interpreter
     NodeReturnType Interpreter::visitFuncDecl(
         const std::unique_ptr<Node> &node, Context &ctx)
     {
-        auto &value = std::get<FuncDeclValue>(node->value);
-        std::vector<std::string> args;
-        for (auto &argToken : value.argNames)
-            args.push_back(argToken.value);
+        auto &value = std::get<DeclValue>(node->value);
+
+        auto args = parseArgs(ctx, value.args);
         auto errmsg = ctx.symbolTable.setSymbol(
             value.identifier.value,
             FunctionDeclaration(args, std::move(value.body)));
@@ -675,21 +666,14 @@ namespace snowlang::interpreter
             error(value.identifier.pos, err::DOES_NOT_NAME_FUNCTION);
         auto &funcDecl = std::get<FunctionDeclaration>(*funcDeclSymbol);
 
-        // Check number of args
-        if (value.args.size() != funcDecl.args.size())
-            error(node->pos, err::WRONG_ARG_NUM(
-                                 funcDecl.args.size(),
-                                 value.args.size()));
-
         // Populate arguments in child symbolTable
         SymbolTable newSymbolTable(ctx.symbolTable.firstAncestor());
-        for (size_t i = 0; i < value.args.size(); i++)
-            newSymbolTable.setSymbol(
-                funcDecl.args[i],
-                std::get<Number>(visit(value.args[i], ctx)));
+        populateArgs(ctx, newSymbolTable, funcDecl.args,
+                     value.args, value.identifier.pos);
+
         Context newCtx(newSymbolTable, ctx.logic);
         newCtx.inFunction = true;
-        visit(funcDecl.bodyNode, newCtx);
+        visit(funcDecl.body, newCtx);
         auto returnValue = newCtx.returnValue;
         return returnValue;
     }
@@ -756,13 +740,11 @@ namespace snowlang::interpreter
     NodeReturnType Interpreter::visitMod(
         const std::unique_ptr<Node> &node, Context &ctx)
     {
-        auto &value = std::get<ModuleValue>(node->value);
-        std::vector<std::string> args;
-        for (auto &argToken : value.args)
-            args.push_back(argToken.value);
+        auto &value = std::get<DeclValue>(node->value);
         auto errmsg = ctx.symbolTable.setSymbol(
             value.identifier.value,
-            ModuleDeclaration(args, std::move(value.body)));
+            ModuleDeclaration(
+                parseArgs(ctx, value.args), std::move(value.body)));
         if (errmsg != err::NOERR)
             error(value.identifier.pos, errmsg);
         return std::monostate();
@@ -776,15 +758,9 @@ namespace snowlang::interpreter
             std::get<Number>(visit(value.rhs, ctx));
         if (value.lhs) // no need to assign if lhs is nullptr
         {
-            // make sure lhs is identifier token
-            if (value.lhs->type != NT_LEAF ||
-                std::get<LeafValue>(value.lhs->value).token.type !=
-                    TT_IDEN)
-                error(value.lhs->pos, err::EXPECTED_LVALUE);
-            auto identifier =
-                std::get<LeafValue>(value.lhs->value).token;
-            auto errmsg = ctx.symbolTable.setSymbol(
-                identifier.value, symbolValue);
+            const auto &identifier = getIdenFromExpr(value.lhs);
+            auto errmsg =
+                ctx.symbolTable.setSymbol(identifier.value, symbolValue);
             if (errmsg != err::NOERR)
                 error(identifier.pos, errmsg);
         }
@@ -1070,5 +1046,102 @@ namespace snowlang::interpreter
             }
             std::cout << indenter << "]" << std::endl;
         }
+    }
+
+    Args Interpreter::parseArgs(
+        Context &ctx,
+        const std::vector<std::unique_ptr<Node>> &args)
+    {
+        Args res;
+
+        bool assignment = false;
+        for (auto &arg : args)
+        {
+            auto &value = std::get<VarAssignValue>(arg->value);
+            auto &lhs = value.lhs;
+            auto &rhs = value.rhs;
+            if (lhs)
+                assignment = true;
+            if (assignment)
+            {
+                if (!lhs)
+                    error(arg->pos, err::REGULAR_ARG_AFTER_DEFAULT);
+
+                res.defaultArgs[getIdenFromExpr(lhs).value] =
+                    std::get<Number>(visit(rhs, ctx));
+            }
+            else
+                res.argNames.push_back(getIdenFromExpr(rhs).value);
+        }
+        return res;
+    }
+
+    void Interpreter::populateArgs(
+        Context &ctx, SymbolTable &symbolTable,
+        const Args &argsDecl,
+        const std::vector<std::unique_ptr<Node>> &args,
+        Pos errorPos)
+    {
+        // parse args into regular arguments and default argument overwrites
+        std::vector<Number> argValues;
+        std::unordered_map<std::string, Number> defaultArgs =
+            argsDecl.defaultArgs;
+        bool assignment = false;
+        for (auto &arg : args)
+        {
+            auto &value = std::get<VarAssignValue>(arg->value);
+            auto &lhs = value.lhs;
+            auto &rhs = value.rhs;
+            auto rhsVal = std::get<Number>(visit(rhs, ctx));
+            if (lhs)
+                assignment = true;
+            if (assignment)
+            {
+                if (!lhs)
+                    error(arg->pos, err::REGULAR_ARG_AFTER_DEFAULT);
+
+                auto iden = getIdenFromExpr(lhs).value;
+                if (argsDecl.defaultArgs.count(iden) == 0)
+                    error(arg->pos, err::NO_SUCH_DEFAULT_ARG(iden));
+                defaultArgs[iden] = rhsVal;
+            }
+            else
+                argValues.push_back(rhsVal);
+        }
+
+        // make sure all non-default arguments have been provided
+        if (argValues.size() != argsDecl.argNames.size())
+            error(errorPos, err::WRONG_ARG_NUM(
+                                argsDecl.argNames.size(),
+                                argValues.size()));
+
+        // populate non default arguments
+        for (size_t i = 0; i < argValues.size(); i++)
+        {
+            auto errmsg = symbolTable.setSymbol(
+                argsDecl.argNames[i], argValues[i]);
+            if (errmsg != err::NOERR)
+                error(args[i]->pos, errmsg);
+        }
+
+        // populate default arguments
+
+        size_t i = 0; // need index of key-value pair
+        for (auto &nameValue : defaultArgs)
+        {
+            auto errmsg = symbolTable.setSymbol(
+                nameValue.first, nameValue.second);
+            if (errmsg != err::NOERR)
+                error(args[argsDecl.argNames.size()]->pos, errmsg);
+            i++; // update index
+        }
+    }
+
+    Token Interpreter::getIdenFromExpr(const std::unique_ptr<Node> &expr)
+    {
+        if (expr->type != NT_LEAF ||
+            std::get<LeafValue>(expr->value).token.type != TT_IDEN)
+            error(expr->pos, err::EXPECTED_LVALUE);
+        return std::get<LeafValue>(expr->value).token;
     }
 }

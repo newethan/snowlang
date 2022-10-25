@@ -138,5 +138,19 @@ namespace snowlang::interpreter
             Context &ctx, Token strlit,
             std::vector<std::unique_ptr<Node>> &expressions);
         void printObject(const NodeReturnType &object, size_t indent = 0);
+
+        Args parseArgs(
+            Context &ctx,
+            const std::vector<std::unique_ptr<Node>> &args);
+
+        void populateArgs(
+            Context &ctx, SymbolTable &symbolTable,
+            const Args &argsDecl,
+            const std::vector<std::unique_ptr<Node>> &args,
+            Pos errorPos);
+
+        // Throws error if expression is not just an identifier
+        // Otherwise returns the identifier as a Token
+        Token getIdenFromExpr(const std::unique_ptr<Node> &expr);
     };
 }

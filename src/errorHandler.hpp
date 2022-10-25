@@ -27,7 +27,15 @@ namespace snowlang::err
         " function call, '+', '-' or '('.";
     const std::string EXPECTED_FIRST_OF_INSTRUCTION =
         "Parsing error: Expected 'let', 'con', 'for', 'while', 'break',"
-        " 'continue', 'return' , 'if' or identifier.";
+        " 'continue', 'return' , 'if' or an expression.";
+    const std::string EXPECTED_LET = "Parsing error : Expected 'let'.";
+    const std::string EXPECTED_CON = "Parsing error : Expected 'con'.";
+    const std::string EXPECTED_FOR = "Parsing error : Expected 'for'.";
+    const std::string EXPECTED_WHILE = "Parsing error : Expected 'while'.";
+    const std::string EXPECTED_IF = "Parsing error : Expected 'if'.";
+    const std::string EXPECTED_PRINT = "Parsing error : Expected 'print'.";
+    const std::string EXPECTED_TICK = "Parsing error : Expected 'tick'.";
+    const std::string EXPECTED_HOLD = "Parsing error : Expected 'hold'.";
     const std::string EXPECTED_EOI =
         "Parsing error: Unexpected token.";
     const std::string EXPECTED_INT = "Parsing error: Expected integer.";
@@ -101,6 +109,17 @@ namespace snowlang::err
         buf += ", got ";
         buf += std::to_string(got);
         buf += ")";
+
+        return buf;
+    }
+    const std::string REGULAR_ARG_AFTER_DEFAULT =
+        "Runtime error: Regular argument specification after default argument overwrite.";
+    inline const std::string NO_SUCH_DEFAULT_ARG(const std::string &iden)
+    {
+        std::string buf;
+        buf += "Runtime error: '";
+        buf += iden;
+        buf += "' is not an argument with a default value.";
 
         return buf;
     }

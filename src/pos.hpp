@@ -19,6 +19,10 @@ namespace snowlang
         // initializes invalid pos
         Pos() = default;
 
+        // initializes just fileIndex
+        Pos(size_t t_fileIndex)
+            : valid(true), fileIndex(t_fileIndex) {}
+
         // initializes given pos start, pos end and file index
         // (default 0)
         Pos(size_t t_start, size_t t_end, size_t t_fileIndex)

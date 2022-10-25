@@ -187,7 +187,7 @@ namespace snowlang
             }
             symbolTable = symbolTable->parent;
         }
-        // Make sure that symbol is modifiable()
+        // Make sure that symbol is modifiable
         if ((*mapToUpdate).count(name) > 0)
         {
             auto &value = (*mapToUpdate)[name];

@@ -176,18 +176,18 @@ namespace snowlang
             : fields(std::move(t_instructions)) {}
     };
 
-    struct FuncDeclValue
+    struct DeclValue
     {
         Token identifier;
-        std::vector<Token> argNames;
+        std::vector<std::unique_ptr<Node>> args;
         std::unique_ptr<Node> body;
 
-        FuncDeclValue(
+        DeclValue(
             Token &t_identifier,
-            std::vector<Token> &t_argNames,
+            std::vector<std::unique_ptr<Node>> t_args,
             std::unique_ptr<Node> t_body)
             : identifier(t_identifier),
-              argNames(t_argNames),
+              args(std::move(t_args)),
               body(std::move(t_body)) {}
     };
 
@@ -201,20 +201,6 @@ namespace snowlang
             std::vector<std::unique_ptr<Node>> t_args)
             : identifier(t_identifier),
               args(std::move(t_args)) {}
-    };
-
-    struct ModuleValue
-    {
-        Token identifier;
-        std::vector<Token> args;
-        std::unique_ptr<Node> body;
-
-        ModuleValue(
-            Token t_identifier,
-            std::vector<Token> t_args,
-            std::unique_ptr<Node> t_body)
-            : identifier(t_identifier),
-              args(t_args), body(std::move(t_body)) {}
     };
 
     struct VarAssignValue
@@ -273,8 +259,7 @@ namespace snowlang
             ItemValue, DefineValue, ConValue,
             ForValue, WhileValue, BreakValue, ContinueValue,
             IfValue, VarAssignValue, BlockValue,
-            FuncDeclValue, FuncCallValue, ReturnValue,
-            ModuleValue,
+            DeclValue, FuncCallValue, ReturnValue,
             PrintValue, TickValue, HoldValue>;
 
     class Node

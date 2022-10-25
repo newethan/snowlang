@@ -41,27 +41,67 @@ nt
 
 
 script
-    : (MOD LPAREN (IDEN (COMMA IDEN)*)? RPAREN IDEN LBRACE block RBRACE |
-        LET LPAREN (IDEN (COMMA IDEN)*)? RPAREN LBRACE block RBRACE |
-        IMPORT STRLIT SEMICOLON)*
+    : (mod | fun | import)*
+    ;
+mod
+    : MOD LPAREN
+        (assign (COMMA assign)*)?
+        RPAREN IDEN LBRACE block RBRACE
+    ;
+fun
+    : LET LPAREN
+        (assign (COMMA assign)*)?
+        RPAREN LBRACE block RBRACE
+    ;
+import
+    : IMPORT STRLIT SEMICOLON
     ;
 block
     : (instruction)*
     ;
 instruction
-    : LET IDEN (LPAREN (expr (COMMA expr)*)? RPAREN)? IDEN (LBRACK expr RBRACK)? SEMICOLON
-    : CONNECT item item SEMICOLON
-    : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE block RBRACE
-    : WHILE expr LBRACE block RBRACE
+    : construct
+    : connect
+    : for_loop
+    : while_loop
     : BREAK SEMICOLON
     : CONTINUE SEMICOLON
+    : if_statement
+    : print
+    : tick
+    : hold
+    : assign SEMICOLON
+    ;
+construct
+    : LET IDEN
+        (LPAREN (assign (COMMA assign)*)? RPAREN)?
+        IDEN (LBRACK expr RBRACK)? SEMICOLON
+    ;
+connect
+    : CON item item SEMICOLON
+    ;
+for_loop
+    : FOR IDEN IN LPAREN expr COMMA expr RPAREN LBRACE block RBRACE
+    ;
+while_loop
+    : WHILE expr LBRACE block RBRACE
+    ;
+if_statement
     : IF expr LBRACE block RBRACE
         (ELIF expr LBRACE block RBRACE)*
         (ELSE LBRACE block RBRACE)?
+    ;
+print
     : PRINT ((STRLIT (COMMA expr)*) | item) SEMICOLON
+    ;
+tick
     : TICK expr SEMICOLON
+    ;
+hold
     : HOLD item INT expr SEMICOLON
-    : expr (ASSIGN expr)? SEMICOLON     # footnote 1 #
+    ;
+assign
+    : expr (ASSIGN expr)?              # footnote 1 #
     ;
 item
     : IDEN (LBRACK expr RBRACK)? (PERIOD IDEN (LBRACK expr RBRACK)?)*
@@ -93,7 +133,7 @@ atom
     : INT
     : FLOAT
     : LPAREN expr RPAREN
-    : IDEN LPAREN (expr (COMMA expr)*)? RPAREN
+    : IDEN LPAREN (assign (COMMA assign)*)? RPAREN
     ;
 
 #####################

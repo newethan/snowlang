@@ -65,28 +65,31 @@ namespace snowlang
         static Number ltOp(Number left, Number right);
     };
 
+    // for dealing with argument lists
+    struct Args
+    {
+        std::vector<std::string> argNames;
+        std::unordered_map<std::string, Number> defaultArgs;
+    };
+
     struct ModuleDeclaration
     {
-        std::vector<std::string> args;
+        Args args;
         std::unique_ptr<Node> body;
 
         ModuleDeclaration(
-            std::vector<std::string> t_args,
-            std::unique_ptr<Node> t_body)
-            : args(std::move(t_args)),
-              body(std::move(t_body)) {}
+            const Args &t_args, std::unique_ptr<Node> t_body)
+            : args(t_args), body(std::move(t_body)) {}
     };
 
     struct FunctionDeclaration
     {
-        std::vector<std::string> args;
-        std::unique_ptr<Node> bodyNode;
+        Args args;
+        std::unique_ptr<Node> body;
 
         FunctionDeclaration(
-            std::vector<std::string> t_args,
-            std::unique_ptr<Node> t_bodyNode)
-            : args(std::move(t_args)),
-              bodyNode(std::move(t_bodyNode)) {}
+            const Args &t_args, std::unique_ptr<Node> t_body)
+            : args(t_args), body(std::move(t_body)) {}
     };
 
     using SymbolValueType = std::variant<

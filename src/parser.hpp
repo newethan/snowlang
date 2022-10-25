@@ -52,6 +52,15 @@ namespace snowlang::parser
         std::unique_ptr<Node> script();
         std::unique_ptr<Node> block();
         std::unique_ptr<Node> instruction();
+        std::unique_ptr<Node> construct();
+        std::unique_ptr<Node> connect();
+        std::unique_ptr<Node> for_loop();
+        std::unique_ptr<Node> while_loop();
+        std::unique_ptr<Node> if_statement();
+        std::unique_ptr<Node> print();
+        std::unique_ptr<Node> tick();
+        std::unique_ptr<Node> hold();
+        std::unique_ptr<Node> assign();
         std::unique_ptr<Node> item();
         std::unique_ptr<Node> expr();
         std::unique_ptr<Node> orExpr();
