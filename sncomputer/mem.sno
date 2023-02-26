@@ -1,6 +1,6 @@
 import "multiplexer.sno";
 
-mod Reg (bits, inc_dec, inp_or)
+mod Reg (bits, inc_dec = false, inp_or = false, q)
 {
     # input
     let and data[bits];
