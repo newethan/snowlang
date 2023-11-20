@@ -1,6 +1,6 @@
 import "multiplexer.sno";
 
-mod Reg (bits, inc_dec = false, inp_or = false, q)
+mod Reg (bits, inc_dec = false, inp_or = false)
 {
     # input
     let and data[bits];
@@ -99,20 +99,20 @@ mod SncomputerRegs
 {
     # general purpose registers A-J
     # bin 0000 - 1001
-    let Reg(bits, true, false) gen_purpose[num_gen_purpose];
+    let Reg(bits, inc_dec=true) gen_purpose[num_gen_purpose]; 
     # alu output register
-    let Reg(bits, false, false) l; # bin 1010
+    let Reg(bits) l; # bin 1010
     # general purpose bit register
-    let Reg(1, false, false) q; # bin 1011
+    let Reg(1) q; # bin 1011
     # equality flag
-    let Reg(1, false, false) eq; # bin 1100
+    let Reg(1) eq; # bin 1100
     # less than flag
-    let Reg(1, false, false) lt; # bin 1101
+    let Reg(1) lt; # bin 1101
     # greater than than flag
-    let Reg(1, false, false) gt; # bin 1110
+    let Reg(1) gt; # bin 1110
     # Ram address -
     # pointer to address in memory of current instruction
-    let Reg(bits, true, false) ra; # bin 1111
+    let Reg(bits, inc_dec=true) ra; # bin 1111
 
     let Multiplexer(regid_bits) mult;
     for i in (0, num_gen_purpose - 1)
@@ -165,12 +165,12 @@ mod SncomputerRegs
 
 
     # internal registers
-    let Reg(inst_bits, false, true) instruction; # current instruction
-    let Reg(bits, false, true) ip1; # 1st instruction parameter
-    let Reg(bits, false, true) ip2; # 2nd instruction parameter
-    let Reg(stackp_bits, true, true) stackp; # stack pointer
+    let Reg(inst_bits, inp_or=true) instruction; # current instruction
+    let Reg(bits, inp_or=true) ip1; # 1st instruction parameter
+    let Reg(bits, inp_or=true) ip2; # 2nd instruction parameter
+    let Reg(stackp_bits, inc_dec=true, inp_or=true) stackp; # stack pointer
     # (stackp_bits bits - 2**stackp_bits bytes in stack!)
-    let Reg(bits, true, true) stepc; # step counter
+    let Reg(bits, inc_dec=true, inp_or=true) stepc; # step counter
 }
 
 mod Ram (bits)
@@ -185,7 +185,7 @@ mod Ram (bits)
     let or out[bits];
 
     let Multiplexer(bits) mult;
-    let Reg(bits, false, false) regs[2**bits];
+    let Reg(bits) regs[2**bits];
     con address mult.address;
 
     for i in (0, 2**bits - 1)
