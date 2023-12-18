@@ -4,17 +4,16 @@ mod Reg (bits, inc_dec = false, inp_or = false)
 {
     # input
     let and data[bits];
-    if inp_or
+
+    let or or_set;
+    let or or_read;
+    if inc_dec
     {
-        let or set;
-        let or read;
-        if inc_dec
-        {
-            let or inc;
-            let or dec;
-        }
+        let or or_inc;
+        let or or_dec;
     }
-    else
+
+    if !inp_or
     {
         let and set;
         let and read;
@@ -22,7 +21,12 @@ mod Reg (bits, inc_dec = false, inp_or = false)
         {
             let and inc;
             let and dec;
+            con inc or_inc;
+            con dec or_dec;
         }
+
+        con set or_set;
+        con read or_read;
     }
 
     # output
@@ -41,15 +45,15 @@ mod Reg (bits, inc_dec = false, inp_or = false)
     con data mem;
     for i in (0, bits - 1)
     {
-        con set data[i];
-        con set reset[i];
+        con or_set data[i];
+        con or_set reset[i];
     }
 
     # read
     con mem out;
     for i in (0,  bits - 1)
     {
-        con read out[i];
+        con or_read out[i];
     }
 
     # increment and decrement
@@ -60,29 +64,12 @@ mod Reg (bits, inc_dec = false, inp_or = false)
         con flip mem;
         con mem inv_mem;
 
-        if inp_or
+        for i in (0, bits - 1)
         {
-            for i in (0, bits - 1)
-            {
-                con dec inv_mem[i];
-                con inc flip[i];
-            }
-            con dec inc;
+            con or_dec inv_mem[i];
+            con or_inc flip[i];
         }
-        else
-        {
-            let or or_inc;
-            let or or_dec;
-            con inc or_inc;
-            con dec or_dec;
-
-            for i in (0, bits - 1)
-            {
-                con or_dec inv_mem[i];
-                con or_inc flip[i];
-            }
-            con or_dec or_inc;
-        }
+        con or_dec or_inc;
 
         for i in (1, bits - 1)
         {

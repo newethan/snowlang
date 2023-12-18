@@ -119,7 +119,7 @@ mod Main
     # every time cpu tick is given
     let or cpu_tick_a;
     let Timer(7) cpu_tick_b;
-    let Timer(3) cpu_tick_c;
+    let Timer(4) cpu_tick_c;
     let Timer(4) cpu_tick_d;
     con cpu_tick cpu_tick_a;
     con cpu_tick_a cpu_tick_b.inp;
@@ -128,7 +128,7 @@ mod Main
 
     con cpu_tick_a ram_selector.select[0];
     con cpu_tick_b.out ram.read;
-    con cpu_tick_c.out regs.instruction.set;
+    con cpu_tick_c.out regs.instruction.or_set;
     for i in (0, 2**inst_bits - 1)
     {
         con cpu_tick_d.out mult.board[i];
@@ -139,7 +139,7 @@ mod Main
 
     # LDR - Load register. Bin 00001
     # 1. increment stepc - then 6 tick delay
-    # 2. read ram - then 3 tick delay
+    # 2. read ram - then 4 tick delay
     # 3. set ip1
     #    change ram address selection to regs.ra.mem (mode 1)
     #    change register selection to ip1.mem (mode 0)
@@ -150,7 +150,7 @@ mod Main
     #    cpu_tick
     let or ldr_1;
     let Timer(6) ldr_2;
-    let Timer(3) ldr_3;
+    let Timer(4) ldr_3;
     let Timer(7) ldr_4;
     let Timer(2) ldr_5;
     con mult.board[1] ldr_1;
@@ -159,15 +159,15 @@ mod Main
     con ldr_3.out ldr_4.inp;
     con ldr_4.out ldr_5.inp;
 
-    con ldr_1 regs.stepc.inc;              # 1
-    con ldr_2.out ram.read;                # 2
-    con ldr_3.out regs.ip1.set;            # 3(a)
-    con ldr_3.out ram_selector.select[1];  # 3(b)
-    con ldr_3.out regs_selector.select[0]; # 3(c)
-    con ldr_4.out ram.read;                # 4
-    con ldr_5.out regs.set;                # 5(a)
-    con ldr_5.out regs.stepc.inc;          # 5(b)
-    con ldr_5.out cpu_tick;                # 5(c)
+    con ldr_1 regs.stepc.or_inc;            # 1
+    con ldr_2.out ram.read;                 # 2
+    con ldr_3.out regs.ip1.or_set;          # 3(a)
+    con ldr_3.out ram_selector.select[1];   # 3(b)
+    con ldr_3.out regs_selector.select[0];  # 3(c)
+    con ldr_4.out ram.read;                 # 4
+    con ldr_5.out regs.set;                 # 5(a)
+    con ldr_5.out regs.stepc.or_inc;        # 5(b)
+    con ldr_5.out cpu_tick;                 # 5(c)
 
     # STR - Store register. Bin 00010
     # 1. increment stepc - then 6 tick delay
@@ -191,84 +191,81 @@ mod Main
     con str_3.out str_4.inp;
     con str_4.out str_5.inp;
 
-    con str_1 regs.stepc.inc;              # 1
+    con str_1 regs.stepc.or_inc;              # 1
     con str_2.out ram.read;                # 2
-    con str_3.out regs.ip1.set;            # 3(a)
+    con str_3.out regs.ip1.or_set;            # 3(a)
     con str_3.out ram_selector.select[1];  # 3(b)
     con str_3.out regs_selector.select[0]; # 3(c)
     con str_4.out regs.read;               # 4
     con str_5.out ram.set;                 # 5(a)
-    con str_5.out regs.stepc.inc;          # 5(b)
+    con str_5.out regs.stepc.or_inc;          # 5(b)
     con str_5.out cpu_tick;                # 5(c)
 
     # SER - Set register. Bin 00011
     # 1. increment stepc - then 6 tick delay
-    # 2. read ram - then 3 tick delay
+    # 2. read ram - then 4 tick delay
     # 3. set ip1
     #    increment stepc
     #    - then 6 tick delay
-    # 4. read ram - then 3 tick delay
+    # 4. read ram - then 4 tick delay
     # 5. set ip2
     #    change register selection to ip1.mem (mode 0)
     #    - then 7 tick delay
     # 6. read ip2
-    # 7. set regs
+    #    set regs
     #    increment stepc
     #    cpu_tick
     let or ser_1;
     let Timer(6) ser_2;
-    let Timer(3) ser_3;
+    let Timer(4) ser_3;
     let Timer(6) ser_4;
-    let Timer(3) ser_5;
+    let Timer(4) ser_5;
     let Timer(7) ser_6;
-    let or ser_7;
     con mult.board[3] ser_1;
     con ser_1 ser_2.inp;
     con ser_2.out ser_3.inp;
     con ser_3.out ser_4.inp;
     con ser_4.out ser_5.inp;
     con ser_5.out ser_6.inp;
-    con ser_6.out ser_7;
 
-    con ser_1 regs.stepc.inc;              # 1
+    con ser_1 regs.stepc.or_inc;           # 1
     con ser_2.out ram.read;                # 2
-    con ser_3.out regs.ip1.set;            # 3(a)
-    con ser_3.out regs.stepc.inc;          # 3(b)
+    con ser_3.out regs.ip1.or_set;         # 3(a)
+    con ser_3.out regs.stepc.or_inc;       # 3(b)
     con ser_4.out ram.read;                # 4
-    con ser_5.out regs.ip2.set;            # 5(a)
+    con ser_5.out regs.ip2.or_set;         # 5(a)
     con ser_5.out regs_selector.select[0]; # 5(b)
-    con ser_6.out regs.ip2.read;           # 6
-    con ser_7 regs.set;                    # 7(a)
-    con ser_7 regs.stepc.inc;              # 7(b)
-    con ser_7 cpu_tick;                    # 7(c)
+    con ser_6.out regs.ip2.or_read;        # 6 (a)
+    con ser_6.out regs.set;                # 6(b)
+    con ser_6.out regs.stepc.or_inc;       # 6(c)
+    con ser_6.out cpu_tick;                # 6(d)
 
     # MOV - Moves value from one register to another. Bin 00100
     # 1. increment stepc - then 6 tick delay
-    # 2. read ram - then 3 tick delay
+    # 2. read ram - then 4 tick delay
     # 3. set ip1
     #    increment stepc
     #    - then 6 tick delay
-    # 4. read ram - then 3 tick delay
+    # 4. read ram - then 4 tick delay
     # 5. set ip2
     #    change register selection to ip1.mem (mode 0)
     #    - then 7 tick delay
-    # 6. read regs - then 2 tick delay
+    # 6. read regs - then 3 tick delay
     # 7. set ip1
     #    change register selection to ip2.mem (mode 1)
     #    - then 7 tick delay
     # 8. read ip1
-    # 9. set regs
+    #    set regs
     #    increment stepc
     #    cpu_tick
     let or mov_1;
     let Timer(6) mov_2;
-    let Timer(3) mov_3;
+    let Timer(4) mov_3;
     let Timer(6) mov_4;
-    let Timer(3) mov_5;
+    let Timer(4) mov_5;
     let Timer(7) mov_6;
-    let Timer(2) mov_7;
+    let Timer(3) mov_7;
     let Timer(7) mov_8;
-    let or mov_9;
     con mult.board[4] mov_1;
     con mov_1 mov_2.inp;
     con mov_2.out mov_3.inp;
@@ -277,74 +274,73 @@ mod Main
     con mov_5.out mov_6.inp;
     con mov_6.out mov_7.inp;
     con mov_7.out mov_8.inp;
-    con mov_8.out mov_9;
 
-    con mov_1 regs.stepc.inc;              # 1
-    con mov_2.out ram.read;                # 2
-    con mov_3.out regs.ip1.set;            # 3(a)
-    con mov_3.out regs.stepc.inc;          # 3(b)
-    con mov_4.out ram.read;                # 4
-    con mov_5.out regs.ip2.set;            # 5(a)
-    con mov_5.out regs_selector.select[0]; # 5(b)
-    con mov_6.out regs.read;               # 6
-    con mov_7.out regs.ip1.set;            # 7(a)
-    con mov_7.out regs_selector.select[1]; # 7(b)
-    con mov_8.out regs.ip1.read;           # 8
-    con mov_9 regs.set;                    # 9(a)
-    con mov_9 regs.stepc.inc;              # 9(b)
-    con mov_9 cpu_tick;                    # 9(c)
+    con mov_1 regs.stepc.or_inc;              # 1
+    con mov_2.out ram.read;                   # 2
+    con mov_3.out regs.ip1.or_set;            # 3(a)
+    con mov_3.out regs.stepc.or_inc;          # 3(b)
+    con mov_4.out ram.read;                   # 4
+    con mov_5.out regs.ip2.or_set;            # 5(a)
+    con mov_5.out regs_selector.select[0];    # 5(b)
+    con mov_6.out regs.read;                  # 6
+    con mov_7.out regs.ip1.or_set;            # 7(a)
+    con mov_7.out regs_selector.select[1];    # 7(b)
+    con mov_8.out regs.ip1.or_read;           # 8(a)
+    con mov_8.out regs.set;                   # 8(b)
+    con mov_8.out regs.stepc.or_inc;          # 8(c)
+    con mov_8.out cpu_tick;                   # 8(d)
 
-    # INC - Increment register. Bin 00101
-    # 1. increment stepc - then 6 tick delay
-    # 2. read ram - then 3 tick delay
-    # 3. set ip1
-    #    change register selection to ip1.mem (mode 0)
-    #    - then 7 tick delay
-    # 4. increment regs
-    #    increment stepc
-    #    cpu_tick
-    let or inc_1;
-    let Timer(6) inc_2;
-    let Timer(3) inc_3;
-    let Timer(7) inc_4;
-    con mult.board[5] inc_1;
-    con inc_1 inc_2.inp;
-    con inc_2.out inc_3.inp;
-    con inc_3.out inc_4.inp;
+    # # INC - Increment register. Bin 00101
+    # # 1. increment stepc - then 6 tick delay
+    # # 2. read ram - then 3 tick delay
+    # # 3. set ip1
+    # #    change register selection to ip1.mem (mode 0)
+    # #    - then 7 tick delay
+    # # 4. increment regs
+    # #    increment stepc
+    # #    cpu_tick
+    # let or inc_1;
+    # let Timer(6) inc_2;
+    # let Timer(3) inc_3;
+    # let Timer(7) inc_4;
+    # con mult.board[5] inc_1;
+    # con inc_1 inc_2.inp;
+    # con inc_2.out inc_3.inp;
+    # con inc_3.out inc_4.inp;
 
-    con inc_1 regs.stepc.inc;              # 1
-    con inc_2.out ram.read;                # 2
-    con inc_3.out regs.ip1.set;            # 3(a)
-    con inc_3.out regs_selector.select[0]; # 3(b)
-    con inc_4.out regs.inc;                # 4(a)
-    con inc_4.out regs.stepc.inc;          # 4(b)
-    con inc_4.out cpu_tick;                # 4(c)
+    # con inc_1 regs.stepc.inc;              # 1
+    # con inc_2.out ram.read;                # 2
+    # con inc_3.out regs.ip1.set;            # 3(a)
+    # con inc_3.out regs_selector.select[0]; # 3(b)
+    # con inc_4.out regs.inc;                # 4(a)
+    # con inc_4.out regs.stepc.inc;          # 4(b)
+    # con inc_4.out cpu_tick;                # 4(c)
 
-    # DEC - Decrement register. Bin 00110
-    # 1. increment stepc - then 6 tick delay
-    # 2. read ram - then 3 tick delay
-    # 3. set ip1
-    #    change register selection to ip1.mem (mode 0)
-    #    - then 7 tick delay
-    # 4. decrement regs
-    #    increment stepc
-    #    cpu_tick
-    let or dec_1;
-    let Timer(6) dec_2;
-    let Timer(3) dec_3;
-    let Timer(7) dec_4;
-    con mult.board[6] dec_1;
-    con dec_1 dec_2.inp;
-    con dec_2.out dec_3.inp;
-    con dec_3.out dec_4.inp;
+    # # DEC - Decrement register. Bin 00110
+    # # 1. increment stepc - then 6 tick delay
+    # # 2. read ram - then 3 tick delay
+    # # 3. set ip1
+    # #    change register selection to ip1.mem (mode 0)
+    # #    - then 7 tick delay
+    # # 4. decrement regs
+    # #    increment stepc
+    # #    cpu_tick
+    # let or dec_1;
+    # let Timer(6) dec_2;
+    # let Timer(3) dec_3;
+    # let Timer(7) dec_4;
+    # con mult.board[6] dec_1;
+    # con dec_1 dec_2.inp;
+    # con dec_2.out dec_3.inp;
+    # con dec_3.out dec_4.inp;
 
-    con dec_1 regs.stepc.inc;              # 1
-    con dec_2.out ram.read;                # 2
-    con dec_3.out regs.ip1.set;            # 3(a)
-    con dec_3.out regs_selector.select[0]; # 3(b)
-    con dec_4.out regs.dec;                # 4(a)
-    con dec_4.out regs.stepc.inc;          # 4(b)
-    con dec_4.out cpu_tick;                # 4(c)
+    # con dec_1 regs.stepc.inc;              # 1
+    # con dec_2.out ram.read;                # 2
+    # con dec_3.out regs.ip1.set;            # 3(a)
+    # con dec_3.out regs_selector.select[0]; # 3(b)
+    # con dec_4.out regs.dec;                # 4(a)
+    # con dec_4.out regs.stepc.inc;          # 4(b)
+    # con dec_4.out cpu_tick;                # 4(c)
 
     # # ADD - Add contents of two registers. Bin 00111
     # # 1. increment stepc - then 6 tick delay
@@ -409,10 +405,13 @@ mod Main
 
 let runtime ()
 {
-    hold ram.regs[0].mem  00000011 1;
+    hold regs.ra.mem 00010001 1;
+    hold regs.gen_purpose[1].mem 11110000 1;
+
+    hold ram.regs[0].mem  00000100 1;
     hold ram.regs[1].mem  00000001 1;
-    hold ram.regs[2].mem  00000101 1;
-    hold ram.regs[3].mem  00000011 1;
+    hold ram.regs[2].mem  00000000 1; 
+    hold ram.regs[3].mem  00000000 1; #
     hold ram.regs[4].mem  00000010 1;
     hold ram.regs[5].mem  00000011 1;
     hold ram.regs[6].mem  00000111 1;
@@ -455,6 +454,9 @@ let runtime ()
         print "ra.inc is ";
         print regs.ra.inc;
         print "\n";
+        print "ram.mult.board is ";
+        print ram.mult.board;
+        print "\n";
 
         tick 1;
     }
@@ -471,5 +473,8 @@ let runtime ()
     print "\n";
     print "ram[00010001] = ";
     print ram.regs[17].mem;
+    print "\n";
+    print "ram[00000000] = ";
+    print ram.regs[0].mem;
     print "\n";
 }

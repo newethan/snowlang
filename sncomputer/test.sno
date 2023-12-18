@@ -1,0 +1,19 @@
+import "mem.sno";
+
+mod Main
+{
+    let or bus[8];
+    let or set_bit;
+    let or set;
+
+    let Reg(8, inc_dec=true) r;
+
+    con bus r.data;
+    for i in (0,7)
+    {
+        con set_bit r.data[i];
+        con set_bit r.reset[i];
+    }
+    con set_bit r.set_flag_turnoff;
+    con set r.set;
+}
