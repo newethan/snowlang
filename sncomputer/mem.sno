@@ -160,7 +160,7 @@ mod SncomputerRegs
     let Reg(bits, inc_dec=true, inp_or=true) stepc; # step counter
 }
 
-mod Ram (bits)
+mod RegisterGroup (bits)
 {
     # input
     let or address[bits];

@@ -84,11 +84,24 @@ mod Main
         con regs_selector.out[i] regs.mult.address[i];
     }
 
+    ##############
+    # stack
+    ##############
+    let RegisterGroup(bits) stack;
+    con regs.stackp.mem stack.mult.address;
+
+    con bus stack.data;
+    con stack.out bus;
+
+    # make reading and setting the stack like popping and pushing by decrementing and incrementing the stack pointer.
+    con stack.set regs.stackp.or_inc;
+    # to pop stack, before reading stack, cpu has to decrement stackp
+
 
     ##############
     # ram
     ##############
-    let Ram(bits) ram;
+    let RegisterGroup(bits) ram;
     let Selector(bits, 2) ram_selector;
     con regs.stepc.mem ram_selector.words[0].word;
     con regs.ra.mem ram_selector.words[1].word;
@@ -1092,11 +1105,11 @@ mod Main
     con jmac_3_q_flag_high jmac_3_q_flag_high_b.inp;
 
     con jmac_1 regs.stepc.or_inc;                   # 1
-    con jmac_3_q_flag_high ram.read;                # 5(q-high-a)
-    con jmac_3_q_flag_high_b.out regs.stepc.or_set; # 5(q-high-b)
-    con jmac_3_q_flag_high_b.out cpu_tick;          # 5(q-high-c)
-    con jmac_3_q_flag_low regs.stepc.or_inc;        # 5(q-low-a)
-    con jmac_3_q_flag_low cpu_tick;                 # 5(q-low-b)
+    con jmac_3_q_flag_high ram.read;                # 3(q-high-a)
+    con jmac_3_q_flag_high_b.out regs.stepc.or_set; # 3(q-high-b)
+    con jmac_3_q_flag_high_b.out cpu_tick;          # 3(q-high-c)
+    con jmac_3_q_flag_low regs.stepc.or_inc;        # 3(q-low-a)
+    con jmac_3_q_flag_low cpu_tick;                 # 3(q-low-b)
 
     # JMPC - Jumps to the address stored in the specified register if the Q flag is high. Bin 10110
     # 1. increment stepc - then 6 tick delay
@@ -1141,51 +1154,191 @@ mod Main
     con jmpc_5_q_flag_low cpu_tick;                 # 5(q-low-b)
     
     # SUA - Jumps to the specified address, when encounters RET instruction returns to the line after the function call. Bin 10111
-    # 1. increment stepc - then ??? tick delay
-    # 2. read stepc - then ??? tick delay
+    # 1. increment stepc - then 2 tick delay
+    # 2. read stepc
     # 3. push stack
     #    read ram - then 4 tick delay
     # 4. set stepc
     #    cpu_tick
 
-    let or jma_1;
-    let Timer(6) jma_2;
-    let Timer(4) jma_3;
-    con mult.board[19] jma_1;
-    con jma_1 jma_2.inp;
-    con jma_2.out jma_3.inp;
+    let or sua_1;
+    let Timer(2) sua_2;
+    let or sua_3;
+    let Timer(4) sua_4;
+    con mult.board[23] sua_1;
+    con sua_1 sua_2.inp;
+    con sua_2.out sua_3;
+    con sua_3 sua_4.inp;
 
-    con jma_1 regs.stepc.or_inc;     # 1
-    con jma_2.out ram.read;          # 2
-    con jma_3.out regs.stepc.or_set; # 3(a)
-    con jma_3.out cpu_tick;          # 3(b)
+    con sua_1 regs.stepc.or_inc;      # 1
+    con sua_2.out regs.stepc.or_read; # 2
+    con sua_3 stack.set;              # 3(a)
+    con sua_3 ram.read;               # 3(b)
+    con sua_4.out regs.stepc.or_set;  # 4(a)
+    con sua_4.out cpu_tick;           # 4(b)
+
+    # SUBR - Jumps to the address stored in the specified register, when encounters RET instruction returns to the line after the function call. Bin 11000
+    # 1. increment stepc - then 5 tick delay
+    # 2. read stepc
+    # 3. push stack
+    #    read ram - then 4 tick delay
+    # 4. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 5. read regs - then 3 tick delay
+    # 6. set stepc
+    #    cpu_tick
+    let or subr_1;
+    let Timer(5) subr_2;
+    let or subr_3;
+    let Timer(4) subr_4;
+    let Timer(7) subr_5;
+    let Timer(3) subr_6;
+    con mult.board[24] subr_1;
+    con subr_1 subr_2.inp;
+    con subr_2.out subr_3;
+    con subr_3 subr_4.inp;
+    con subr_4.out subr_5.inp;
+    con subr_5.out subr_6.inp;
+
+    con subr_1 regs.stepc.or_inc;           # 1
+    con subr_2.out regs.stepc.or_read;      # 2
+    con subr_3 stack.set;                   # 3(a)
+    con subr_3 ram.read;                    # 3(b)
+    con subr_4.out regs.ip1.or_set;         # 4(a)
+    con subr_4.out regs_selector.select[0]; # 4(b)
+    con subr_5.out regs.read;               # 5
+    con subr_6.out regs.stepc.or_set;       # 6(a)
+    con subr_6.out cpu_tick;                # 6(b)
+
+    # SUAC - Jumps to the specified address if the Q flag is high, when encounters RET instruction returns to the line after the function call. Bin 11001
+    # 1. increment stepc - then 5 tick delay
+    # 2. read stepc
+    # 3. push stack
+    #    if q flag is high ->
+    #       read ram - then 4 tick delay
+    #       set stepc
+    #       cpu_tick
+    #    if q flag is low ->
+    #       increment stepc
+    #       cpu_tick
+    let or suac_1;
+    let Timer(5) suac_2;
+    let or suac_3;
+    let and suac_3_q_flag_high;
+    let and suac_3_q_flag_low;
+    let Timer(4) suac_3_q_flag_high_b;
+    con mult.board[25] suac_1;
+    con suac_1 suac_2.inp;
+    con suac_2.out suac_3;
+    con suac_2.out suac_3_q_flag_high;
+    con regs.q.mem[0] suac_3_q_flag_high;
+    con suac_2.out suac_3_q_flag_low;
+    con neg_q_flag suac_3_q_flag_low;
+    con suac_3_q_flag_high suac_3_q_flag_high_b.inp;
+
+    con suac_1 regs.stepc.or_inc;                   # 1
+    con suac_2.out regs.stepc.or_read;              # 2
+    con suac_3 stack.set;                           # 3(a)
+    con suac_3_q_flag_high ram.read;                # 3(q-high-a)
+    con suac_3_q_flag_high_b.out regs.stepc.or_set; # 3(q-high-b)
+    con suac_3_q_flag_high_b.out cpu_tick;          # 3(q-high-c)
+    con suac_3_q_flag_low regs.stepc.or_inc;        # 3(q-low-a)
+    con suac_3_q_flag_low cpu_tick;                 # 3(q-low-b)
+
+    # SUBC - Jumps to the address stored in the specified register if the Q flag is high, when encounters RET instruction returns to the line after the function call Bin 11010
+    # 1. increment stepc - then 5 tick delay
+    # 2. read stepc - then 2 tick delay
+    # 3. push stack
+    #    read ram - then 4 tick delay
+    # 4. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 5  blank (timer)
+    # 6. 
+    #    if q flag is high ->
+    #       read regs - then 3 tick delay
+    #       set stepc
+    #       cpu_tick
+    #    if q flag is low ->
+    #       increment stepc
+    #       cpu_tick
+    let or subc_1;
+    let Timer(6) subc_2;
+    let or subc_3;
+    let Timer(4) subc_4;
+    let Timer(7) subc_5;
+    let and subc_6_q_flag_high;
+    let and subc_6_q_flag_low;
+    let Timer(3) subc_6_q_flag_high_b;
+    con mult.board[26] subc_1;
+    con subc_1 subc_2.inp;
+    con subc_2.out subc_3;
+    con subc_3 subc_4.inp;
+    con subc_4.out subc_5.inp;
+    con subc_5.out subc_6_q_flag_high;
+    con regs.q.mem[0] subc_6_q_flag_high;
+    con subc_5.out subc_6_q_flag_low;
+    con neg_q_flag subc_6_q_flag_low;
+    con subc_6_q_flag_high subc_6_q_flag_high_b.inp;
+
+    con subc_1 regs.stepc.or_inc;                   # 1
+    con subc_2.out regs.stepc.or_read;              # 2
+    con subc_3 stack.set;                           # 3(a)
+    con subc_3 ram.read;                            # 3(b)
+    con subc_4.out regs.ip1.or_set;                 # 4(a)
+    con subc_4.out regs_selector.select[0];         # 4(b)
+    con subc_6_q_flag_high regs.read;               # 6(q-high-a)
+    con subc_6_q_flag_high_b.out regs.stepc.or_set; # 6(q-high-b)
+    con subc_6_q_flag_high_b.out cpu_tick;          # 6(q-high-c)
+    con subc_6_q_flag_low regs.stepc.or_inc;        # 6(q-low-a)
+    con subc_6_q_flag_low cpu_tick;                 # 6(q-low-b)
+
+    # RET - Pops the stack and jumps to the stored address+1. Bin 11011
+    # 1. decrement stackp - then 5 tick delay
+    # 2. read stack - then 4 tick delay
+    # 3. set stepc
+    #    increment stepc
+    #    cpu_tick
+    let or ret_1;
+    let Timer(5) ret_2;
+    let Timer(4) ret_3;
+    con mult.board[27] ret_1;
+    con ret_1 ret_2.inp;
+    con ret_2.out ret_3.inp;
+
+    con ret_1 regs.stackp.or_dec;    # 1
+    con ret_2.out stack.read;        # 2
+    con ret_3.out regs.stepc.or_set; # 3(a)
+    con ret_3.out regs.stepc.or_inc; # 3(b)
+    con ret_3.out cpu_tick;          # 3(c)
 }
 
 let runtime ()
 {
     hold regs.ra.mem 00010001 1;
-    hold regs.gen_purpose[1].mem 00001010 1;
+    hold regs.gen_purpose[1].mem 00001101 1;
     hold regs.gen_purpose[2].mem 11100111 1;
-    hold regs.q.mem 0 1;
+    hold regs.q.mem 1 1;
 
-    hold ram.regs[0].mem  00010110 1;
-    hold ram.regs[1].mem  00000001 1;
-    hold ram.regs[2].mem  00000011 1; 
-    hold ram.regs[3].mem  00000001 1; #
-    hold ram.regs[4].mem  11111111 1;
-    hold ram.regs[5].mem  00000000 1;
-    hold ram.regs[6].mem  00000000 1;
-    hold ram.regs[7].mem  00000000 1;
+    hold ram.regs[0].mem  00000011 1;
+    hold ram.regs[1].mem  00000000 1;
+    hold ram.regs[2].mem  10000000 1;
+    hold ram.regs[3].mem  00011010 1;
+    hold ram.regs[4].mem  00000001 1;
+    hold ram.regs[5].mem  00000011 1; 
+    hold ram.regs[6].mem  00000001 1; #
+    hold ram.regs[7].mem  11111111 1;
     hold ram.regs[8].mem  00000000 1;
-    hold ram.regs[9].mem  00000000 1; #
-    hold ram.regs[10].mem 00000011 1;
-    hold ram.regs[11].mem 00000011 1;
-    hold ram.regs[12].mem 11111111 1;
-    hold ram.regs[13].mem 00000000 1;
-    hold ram.regs[14].mem 00000000 1;
-    hold ram.regs[15].mem 00000000 1;
-    hold ram.regs[16].mem 00000000 1;
-    hold ram.regs[17].mem 11100111 1;
+    hold ram.regs[9].mem  00000000 1;
+    hold ram.regs[10].mem  00000000 1;
+    hold ram.regs[11].mem  00000000 1;
+    hold ram.regs[12].mem  00000000 1; #
+    hold ram.regs[13].mem 00000011 1;
+    hold ram.regs[14].mem 00000011 1;
+    hold ram.regs[15].mem 10101010 1;
+    hold ram.regs[16].mem 00011011 1;
+    hold ram.regs[17].mem 00000000 1;
 
 
     tick 10;
@@ -1214,6 +1367,15 @@ let runtime ()
         print "ra.inc is ";
         print regs.ra.inc;
         print "\n";
+        print "stepc.or_set is ";
+        print regs.stepc.or_set;
+        print "\n";
+        print "stack.regs[0].or_read is ";
+        print stack.regs[0].or_read;
+        print "\n";
+        print "stack.mult is ";
+        print stack.mult;
+        print "\n";
 
         tick 1;
     }
@@ -1233,5 +1395,8 @@ let runtime ()
     print "\n";
     print "ram[00000000] = ";
     print ram.regs[0].mem;
+    print "\n\n";
+    print "stack[00000000] = ";
+    print stack.regs[0].mem;
     print "\n";
 }
