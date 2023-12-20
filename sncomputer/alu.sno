@@ -1,3 +1,6 @@
+import "util.sno";
+import "multiplexer.sno";
+
 mod AdderSubstractor (bits)
 {
     # input
@@ -57,12 +60,107 @@ mod AdderSubstractor (bits)
 
 }
 
+mod Comparator (bits)
+{
+    # input
+    let or a[bits];
+    let or b[bits];
+
+    # output
+    let and eq; # a==b
+    let or gt;  # a>b
+    let or lt;  # a<b
+
+    let xnor equal_bits[bits];
+    con a equal_bits;
+    con b equal_bits;
+    for i in (0, bits-1) { con equal_bits[i] eq; }
+
+    let nor neg_a[bits];
+    let nor neg_b[bits];
+    con a neg_a;
+    con b neg_b;
+
+    let and a_and_not_b[bits];
+    let and b_and_not_a[bits];
+    con a a_and_not_b;
+    con neg_b a_and_not_b;
+    con b b_and_not_a;
+    con neg_a b_and_not_a;
+    for i in (0, bits-2)
+    {
+        for j in (i+1, bits-1)
+        {
+            con equal_bits[i] a_and_not_b[j];
+            con equal_bits[i] b_and_not_a[j];
+        }
+    }
+
+    for i in (0, bits-1)
+    {
+        con a_and_not_b[i] gt;
+        con b_and_not_a[i] lt;
+    }
+}
+
+# Pseudo-random number generator
+# Cannot make modular for number of bits with limitations of language.
+# Therefore only works for 8 bits currently
+mod Prng_8Bit
+{
+    bits = 8;
+    let Timer(2) bit_timer_0;
+    let Timer(3) bit_timer_1;
+    let Timer(5) bit_timer_2;
+    let Timer(7) bit_timer_3;
+    let Timer(11) bit_timer_4;
+    let Timer(13) bit_timer_5;
+    let Timer(17) bit_timer_6;
+    let Timer(19) bit_timer_7;
+
+    let xor bits[bits];
+    let nor neg_timer[bits];
+    con bit_timer_0.out neg_timer[0];
+    con bit_timer_1.out neg_timer[1];
+    con bit_timer_2.out neg_timer[2];
+    con bit_timer_3.out neg_timer[3];
+    con bit_timer_4.out neg_timer[4];
+    con bit_timer_5.out neg_timer[5];
+    con bit_timer_6.out neg_timer[6];
+    con bit_timer_7.out neg_timer[7];
+
+    con bits[0] bit_timer_0.inp;
+    con bits[1] bit_timer_1.inp;
+    con bits[2] bit_timer_2.inp;
+    con bits[3] bit_timer_3.inp;
+    con bits[4] bit_timer_4.inp;
+    con bits[5] bit_timer_5.inp;
+    con bits[6] bit_timer_6.inp;
+    con bits[7] bit_timer_7.inp;
+
+    for i in (0, bits-1)
+    {
+        con neg_timer[i] bits[i];
+        con bits[i] bits[(i+1)%bits];
+    }
+}
+
 mod ALU (bits)
 {
     # input
     let or a[bits];
     let or b[bits];
-    let or op_byte[bits];
+    # Select operation with op_byte:
+    # op_byte[0] - a add/subract b
+    # op_byte[1] - a or b
+    # op_byte[2] - a and b
+    # op_byte[3] - a xor b
+    # op_byte[4] - not a
+    # op_byte[5] - shl
+    # op_byte[6] - shr
+    # op_byte[7] - summarize a with operation specified in b
+    # op_byte[8] - output pseudo random number
+    let or op_byte[9];
 
     # output
     let or out[bits];
@@ -73,6 +171,7 @@ mod ALU (bits)
     # (global ALU output or's all these toggled outputs
     #  And only one should be toggled on at a time)
 
+    # add / subtract
     let AdderSubstractor(bits) as;
     let and as_out[bits];
     con a as.a;
@@ -84,6 +183,7 @@ mod ALU (bits)
     }
     con as_out out;
 
+    # or
     let or or_module[bits];
     let and or_out[bits];
     con a or_module;
@@ -95,6 +195,7 @@ mod ALU (bits)
     }
     con or_out out;
 
+    # and
     let and and_module[bits];
     let and and_out[bits];
     con a and_module;
@@ -106,6 +207,7 @@ mod ALU (bits)
     }
     con and_out out;
 
+    # xor
     let xor xor_module[bits];
     let and xor_out[bits];
     con a xor_module;
@@ -117,6 +219,7 @@ mod ALU (bits)
     }
     con xor_out out;
 
+    # not
     let nor not_module[bits];
     let and not_out[bits];
     con a not_module;
@@ -126,4 +229,120 @@ mod ALU (bits)
         con op_byte[4] not_out[i];
     }
     con not_out out;
+
+    # shift left (shl)
+    let and shl_out[bits];
+    let or shl_amount_choice[bits];
+    let Multiplexer(bits) shl_amount_mult;
+    con b shl_amount_mult.address;
+    for i in (0, bits-1)
+    {
+        con shl_amount_mult.board[i] shl_amount_choice[i];
+    }
+
+    let Word(bits) shl_shifted[bits];
+    for i in (0, bits-1)
+    {
+        for j in (0, bits-1)
+        {
+            if i+j < bits
+            {
+                con a[j] shl_shifted[i].word[i+j];
+                con shl_amount_choice[i] shl_shifted[i].word[i+j];
+                con op_byte[5] shl_shifted[i].word[i+j];
+            }
+        }
+        con shl_shifted[i].word out;
+    }
+
+    # shift right (shr)
+    let and shr_out[bits];
+    let or shr_amount_choice[bits];
+    let Multiplexer(bits) shr_amount_mult;
+    con b shr_amount_mult.address;
+    for i in (0, bits-1)
+    {
+        con shr_amount_mult.board[i] shr_amount_choice[i];
+    }
+
+    let Word(bits) shr_shifted[bits];
+    for i in (0, bits-1)
+    {
+        for j in (0, bits-1)
+        {
+            if j-i > 0
+            {
+                con a[j] shr_shifted[i].word[j-i];
+                con shr_amount_choice[i] shr_shifted[i].word[j-i];
+                con op_byte[6] shr_shifted[i].word[j-i];
+            }
+        }
+        con shr_shifted[i].word out;
+    }
+
+    # compare
+    let Comparator(bits) comparator;
+    con a comparator.a;
+    con b comparator.b;
+
+    # summarize
+    let Multiplexer(bits) sum_op_mult;
+    con b sum_op_mult.address;
+
+    let and sum_and;
+    let or sum_or;
+    let xor sum_xor;
+    let nand sum_nand;
+    let nor sum_nor;
+    let xnor sum_xnor;
+    for i in (0, bits-1)
+    {
+        con a[i] sum_and;
+        con a[i] sum_or;
+        con a[i] sum_xor;
+        con a[i] sum_nand;
+        con a[i] sum_nor;
+        con a[i] sum_xnor;
+    }
+
+    let and out_and;
+    let and out_or;
+    let and out_xor;
+    let and out_nand;
+    let and out_nor;
+    let and out_xnor;
+
+    con sum_and out_and;
+    con sum_or out_or;
+    con sum_xor out_xor;
+    con sum_nand out_nand;
+    con sum_nor out_nor;
+    con sum_xnor out_xnor;
+    con op_byte[7] out_and;
+    con op_byte[7] out_or;
+    con op_byte[7] out_xor;
+    con op_byte[7] out_nand;
+    con op_byte[7] out_nor;
+    con op_byte[7] out_xnor;
+    con sum_op_mult.board[0] out_and;
+    con sum_op_mult.board[1] out_or;
+    con sum_op_mult.board[2] out_xor;
+    con sum_op_mult.board[3] out_nand;
+    con sum_op_mult.board[4] out_nor;
+    con sum_op_mult.board[5] out_xnor;
+
+    con out_and out[0];
+    con out_or out[0];
+    con out_xor out[0];
+    con out_nand out[0];
+    con out_nor out[0];
+    con out_xnor out[0];
+
+    # pseudo random number generator
+    # replace with module for correct number of bits
+    let Prng_8Bit prng;
+    let and prng_out[bits];
+    con prng.bits prng_out;
+    for i in (0, bits-1) { con op_byte[8] prng_out[i]; }
+    con prng_out out;
 }

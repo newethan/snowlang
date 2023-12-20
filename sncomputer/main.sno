@@ -290,137 +290,897 @@ mod Main
     con mov_8.out regs.stepc.or_inc;          # 8(c)
     con mov_8.out cpu_tick;                   # 8(d)
 
-    # # INC - Increment register. Bin 00101
-    # # 1. increment stepc - then 6 tick delay
-    # # 2. read ram - then 3 tick delay
-    # # 3. set ip1
-    # #    change register selection to ip1.mem (mode 0)
-    # #    - then 7 tick delay
-    # # 4. increment regs
-    # #    increment stepc
-    # #    cpu_tick
-    # let or inc_1;
-    # let Timer(6) inc_2;
-    # let Timer(3) inc_3;
-    # let Timer(7) inc_4;
-    # con mult.board[5] inc_1;
-    # con inc_1 inc_2.inp;
-    # con inc_2.out inc_3.inp;
-    # con inc_3.out inc_4.inp;
+    # INC - Increment register. Bin 00101
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 4. increment regs
+    #    increment stepc
+    #    cpu_tick
+    let or inc_1;
+    let Timer(6) inc_2;
+    let Timer(4) inc_3;
+    let Timer(7) inc_4;
+    con mult.board[5] inc_1;
+    con inc_1 inc_2.inp;
+    con inc_2.out inc_3.inp;
+    con inc_3.out inc_4.inp;
 
-    # con inc_1 regs.stepc.inc;              # 1
-    # con inc_2.out ram.read;                # 2
-    # con inc_3.out regs.ip1.set;            # 3(a)
-    # con inc_3.out regs_selector.select[0]; # 3(b)
-    # con inc_4.out regs.inc;                # 4(a)
-    # con inc_4.out regs.stepc.inc;          # 4(b)
-    # con inc_4.out cpu_tick;                # 4(c)
+    con inc_1 regs.stepc.or_inc;           # 1
+    con inc_2.out ram.read;                # 2
+    con inc_3.out regs.ip1.or_set;         # 3(a)
+    con inc_3.out regs_selector.select[0]; # 3(b)
+    con inc_4.out regs.inc;                # 4(a)
+    con inc_4.out regs.stepc.or_inc;       # 4(b)
+    con inc_4.out cpu_tick;                # 4(c)
 
-    # # DEC - Decrement register. Bin 00110
-    # # 1. increment stepc - then 6 tick delay
-    # # 2. read ram - then 3 tick delay
-    # # 3. set ip1
-    # #    change register selection to ip1.mem (mode 0)
-    # #    - then 7 tick delay
-    # # 4. decrement regs
-    # #    increment stepc
-    # #    cpu_tick
-    # let or dec_1;
-    # let Timer(6) dec_2;
-    # let Timer(3) dec_3;
-    # let Timer(7) dec_4;
-    # con mult.board[6] dec_1;
-    # con dec_1 dec_2.inp;
-    # con dec_2.out dec_3.inp;
-    # con dec_3.out dec_4.inp;
+    # DEC - Decrement register. Bin 00110
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 4. decrement regs
+    #    increment stepc
+    #    cpu_tick
+    let or dec_1;
+    let Timer(6) dec_2;
+    let Timer(4) dec_3;
+    let Timer(7) dec_4;
+    con mult.board[6] dec_1;
+    con dec_1 dec_2.inp;
+    con dec_2.out dec_3.inp;
+    con dec_3.out dec_4.inp;
 
-    # con dec_1 regs.stepc.inc;              # 1
-    # con dec_2.out ram.read;                # 2
-    # con dec_3.out regs.ip1.set;            # 3(a)
-    # con dec_3.out regs_selector.select[0]; # 3(b)
-    # con dec_4.out regs.dec;                # 4(a)
-    # con dec_4.out regs.stepc.inc;          # 4(b)
-    # con dec_4.out cpu_tick;                # 4(c)
+    con dec_1 regs.stepc.or_inc;           # 1
+    con dec_2.out ram.read;                # 2
+    con dec_3.out regs.ip1.or_set;         # 3(a)
+    con dec_3.out regs_selector.select[0]; # 3(b)
+    con dec_4.out regs.dec;                # 4(a)
+    con dec_4.out regs.stepc.or_inc;       # 4(b)
+    con dec_4.out cpu_tick;                # 4(c)
 
-    # # ADD - Add contents of two registers. Bin 00111
-    # # 1. increment stepc - then 6 tick delay
-    # # 2. read ram - then 3 tick delay
-    # # 3. set ip1
-    # #    increment stepc
-    # #    - then 6 tick delay
-    # # 4. read ram - then 3 tick delay
-    # # 5. set ip2
-    # #    change register selection to ip1.mem (mode 0)
-    # #    - then 7 tick delay
-    # # 6. read regs - then 2 tick delay
-    # # 7. set ip1
-    # #    change register selection to ip2.mem (mode 1)
-    # #    - then 7 tick delay
-    # # 8. read regs - then 2 tick delay
-    # # 9. set ip2 - then ??? tick delay
-    # # 10. read ALU adder-subtractor - then ??? tick delay
-    # # 11. set l
-    # #     increment stepc
-    # #      cpu_tick
-    # let or add_1;
-    # let Timer(6) add_2;
-    # let Timer(3) add_3;
-    # let Timer(6) add_4;
-    # let Timer(3) add_5;
-    # let Timer(7) add_6;
-    # let Timer(2) add_7;
-    # let Timer(7) add_8;
-    # let Timer(2) add_9;
-    # let Timer(50) add_10; # enough for ripple carry to finish
-    # let Timer(5) add_11;
-    # con mult.board[7] add_1;
-    # con add_1 add_2.inp;
-    # con add_2.out add_3.inp;
-    # con add_3.out add_4.inp;
-    # con add_4.out add_5.inp;
-    # con add_5.out add_6.inp;
-    # con add_6.out add_7.inp;
-    # con add_7.out add_8.inp;
-    # con add_8.out add_9.inp;
-    # con add_9.out add_10.inp;
-    # con add_10.out add_11.inp;
+    # ADD - Add contents of two registers. Bin 00111
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then ??? tick delay
+    # 10. read ALU adder-subtractor - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    let or add_1;
+    let Timer(6) add_2;
+    let Timer(4) add_3;
+    let Timer(6) add_4;
+    let Timer(4) add_5;
+    let Timer(7) add_6;
+    let Timer(3) add_7;
+    let Timer(7) add_8;
+    let Timer(3) add_9;
+    let Timer(50) add_10; # enough for ripple carry to finish
+    let Timer(2) add_11;
+    con mult.board[7] add_1;
+    con add_1 add_2.inp;
+    con add_2.out add_3.inp;
+    con add_3.out add_4.inp;
+    con add_4.out add_5.inp;
+    con add_5.out add_6.inp;
+    con add_6.out add_7.inp;
+    con add_7.out add_8.inp;
+    con add_8.out add_9.inp;
+    con add_9.out add_10.inp;
+    con add_10.out add_11.inp;
 
-    # con add_1 regs.stepc.inc;              # 1
-    # con add_2.out ram.read;                # 2
-    # con add_3.out regs.ip1.set;            # 3(a)
-    # con add_3.out regs.stepc.inc;          # 3(b)
-    # con add_4.out ram.read;                # 4
-    # con add_5.out regs.ip2.set;            # 5(a)
-    # con add_5.out regs_selector.select[0]; # 5(b)
-    # con add_6.out regs.read;               # 6
-    # con add_7.out regs.ip1.set;            # 7(a)
-    # con add_7.out regs_selector.select[1]; # 7(b)
-    # con add_8.out regs.read;               # 8
-    # con add_9.out regs.ip2.set;            # 9
-    # con add_10.out alu.op_byte[0];         # 10
-    # con add_11.out regs.l.set;             # 11(a)
-    # con add_11.out regs.stepc.inc;         # 11(b)
-    # con add_11.out cpu_tick;               # 11(c)
+    con add_1 regs.stepc.or_inc;           # 1
+    con add_2.out ram.read;                # 2
+    con add_3.out regs.ip1.or_set;         # 3(a)
+    con add_3.out regs.stepc.or_inc;       # 3(b)
+    con add_4.out ram.read;                # 4
+    con add_5.out regs.ip2.or_set;         # 5(a)
+    con add_5.out regs_selector.select[0]; # 5(b)
+    con add_6.out regs.read;               # 6
+    con add_7.out regs.ip1.or_set;         # 7(a)
+    con add_7.out regs_selector.select[1]; # 7(b)
+    con add_8.out regs.read;               # 8
+    con add_9.out regs.ip2.or_set;         # 9
+    con add_10.out alu.op_byte[0];         # 10
+    con add_11.out regs.l.or_set;          # 11(a)
+    con add_11.out regs.stepc.or_inc;      # 11(b)
+    con add_11.out cpu_tick;               # 11(c)
+
+    # SUB - Subtract contents of two registers. Bin 01000
+    # 1. increment stepc - then 6 tick delay
+    #    toggle ALU adder-subtractor sub-bit
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then ??? tick delay
+    # 10. read ALU adder-subtractor - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    #     toggle ALU adder-subtractor sub-bit
+    let or sub_1;
+    let Timer(6) sub_2;
+    let Timer(4) sub_3;
+    let Timer(6) sub_4;
+    let Timer(4) sub_5;
+    let Timer(7) sub_6;
+    let Timer(3) sub_7;
+    let Timer(7) sub_8;
+    let Timer(3) sub_9;
+    let Timer(50) sub_10; # enough for ripple carry to finish
+    let Timer(2) sub_11;
+    con mult.board[8] sub_1;
+    con sub_1 sub_2.inp;
+    con sub_2.out sub_3.inp;
+    con sub_3.out sub_4.inp;
+    con sub_4.out sub_5.inp;
+    con sub_5.out sub_6.inp;
+    con sub_6.out sub_7.inp;
+    con sub_7.out sub_8.inp;
+    con sub_8.out sub_9.inp;
+    con sub_9.out sub_10.inp;
+    con sub_10.out sub_11.inp;
+
+    con sub_1 regs.stepc.or_inc;           # 1(a)
+    con sub_1 alu.as.sub;                  # 1(b)
+    con sub_2.out ram.read;                # 2
+    con sub_3.out regs.ip1.or_set;         # 3(a)
+    con sub_3.out regs.stepc.or_inc;       # 3(b)
+    con sub_4.out ram.read;                # 4
+    con sub_5.out regs.ip2.or_set;         # 5(a)
+    con sub_5.out regs_selector.select[0]; # 5(b)
+    con sub_6.out regs.read;               # 6
+    con sub_7.out regs.ip1.or_set;         # 7(a)
+    con sub_7.out regs_selector.select[1]; # 7(b)
+    con sub_8.out regs.read;               # 8
+    con sub_9.out regs.ip2.or_set;         # 9
+    con sub_10.out alu.op_byte[0];         # 10
+    con sub_11.out regs.l.or_set;          # 11(a)
+    con sub_11.out regs.stepc.or_inc;      # 11(b)
+    con sub_11.out cpu_tick;               # 11(c)
+    con sub_11.out alu.as.sub;             # 11(d)
+
+    # AND - Ands the contents of two registers. Bin 01001
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then 2 tick delay
+    # 10. read ALU and output - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    let or and_1;
+    let Timer(6) and_2;
+    let Timer(4) and_3;
+    let Timer(6) and_4;
+    let Timer(4) and_5;
+    let Timer(7) and_6;
+    let Timer(3) and_7;
+    let Timer(7) and_8;
+    let Timer(3) and_9;
+    let Timer(3) and_10;
+    let Timer(2) and_11;
+    con mult.board[9] and_1;
+    con and_1 and_2.inp;
+    con and_2.out and_3.inp;
+    con and_3.out and_4.inp;
+    con and_4.out and_5.inp;
+    con and_5.out and_6.inp;
+    con and_6.out and_7.inp;
+    con and_7.out and_8.inp;
+    con and_8.out and_9.inp;
+    con and_9.out and_10.inp;
+    con and_10.out and_11.inp;
+
+    con and_1 regs.stepc.or_inc;           # 1
+    con and_2.out ram.read;                # 2
+    con and_3.out regs.ip1.or_set;         # 3(a)
+    con and_3.out regs.stepc.or_inc;       # 3(b)
+    con and_4.out ram.read;                # 4
+    con and_5.out regs.ip2.or_set;         # 5(a)
+    con and_5.out regs_selector.select[0]; # 5(b)
+    con and_6.out regs.read;               # 6
+    con and_7.out regs.ip1.or_set;         # 7(a)
+    con and_7.out regs_selector.select[1]; # 7(b)
+    con and_8.out regs.read;               # 8
+    con and_9.out regs.ip2.or_set;         # 9
+    con and_10.out alu.op_byte[2];         # 10
+    con and_11.out regs.l.or_set;          # 11(a)
+    con and_11.out regs.stepc.or_inc;      # 11(b)
+    con and_11.out cpu_tick;               # 11(c)
+
+    # OR - Ors the contents of two registers. Bin 01010
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then 2 tick delay
+    # 10. read ALU or output - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    let or or_1;
+    let Timer(6) or_2;
+    let Timer(4) or_3;
+    let Timer(6) or_4;
+    let Timer(4) or_5;
+    let Timer(7) or_6;
+    let Timer(3) or_7;
+    let Timer(7) or_8;
+    let Timer(3) or_9;
+    let Timer(3) or_10;
+    let Timer(2) or_11;
+    con mult.board[10] or_1;
+    con or_1 or_2.inp;
+    con or_2.out or_3.inp;
+    con or_3.out or_4.inp;
+    con or_4.out or_5.inp;
+    con or_5.out or_6.inp;
+    con or_6.out or_7.inp;
+    con or_7.out or_8.inp;
+    con or_8.out or_9.inp;
+    con or_9.out or_10.inp;
+    con or_10.out or_11.inp;
+
+    con or_1 regs.stepc.or_inc;           # 1
+    con or_2.out ram.read;                # 2
+    con or_3.out regs.ip1.or_set;         # 3(a)
+    con or_3.out regs.stepc.or_inc;       # 3(b)
+    con or_4.out ram.read;                # 4
+    con or_5.out regs.ip2.or_set;         # 5(a)
+    con or_5.out regs_selector.select[0]; # 5(b)
+    con or_6.out regs.read;               # 6
+    con or_7.out regs.ip1.or_set;         # 7(a)
+    con or_7.out regs_selector.select[1]; # 7(b)
+    con or_8.out regs.read;               # 8
+    con or_9.out regs.ip2.or_set;         # 9
+    con or_10.out alu.op_byte[1];         # 10
+    con or_11.out regs.l.or_set;          # 11(a)
+    con or_11.out regs.stepc.or_inc;      # 11(b)
+    con or_11.out cpu_tick;               # 11(c)
+
+    # XOR - Xors the contents of two registers. Bin 01011
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then 2 tick delay
+    # 10. read ALU xor output - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    let or xor_1;
+    let Timer(6) xor_2;
+    let Timer(4) xor_3;
+    let Timer(6) xor_4;
+    let Timer(4) xor_5;
+    let Timer(7) xor_6;
+    let Timer(3) xor_7;
+    let Timer(7) xor_8;
+    let Timer(3) xor_9;
+    let Timer(3) xor_10;
+    let Timer(2) xor_11;
+    con mult.board[11] xor_1;
+    con xor_1 xor_2.inp;
+    con xor_2.out xor_3.inp;
+    con xor_3.out xor_4.inp;
+    con xor_4.out xor_5.inp;
+    con xor_5.out xor_6.inp;
+    con xor_6.out xor_7.inp;
+    con xor_7.out xor_8.inp;
+    con xor_8.out xor_9.inp;
+    con xor_9.out xor_10.inp;
+    con xor_10.out xor_11.inp;
+
+    con xor_1 regs.stepc.or_inc;           # 1
+    con xor_2.out ram.read;                # 2
+    con xor_3.out regs.ip1.or_set;         # 3(a)
+    con xor_3.out regs.stepc.or_inc;       # 3(b)
+    con xor_4.out ram.read;                # 4
+    con xor_5.out regs.ip2.or_set;         # 5(a)
+    con xor_5.out regs_selector.select[0]; # 5(b)
+    con xor_6.out regs.read;               # 6
+    con xor_7.out regs.ip1.or_set;         # 7(a)
+    con xor_7.out regs_selector.select[1]; # 7(b)
+    con xor_8.out regs.read;               # 8
+    con xor_9.out regs.ip2.or_set;         # 9
+    con xor_10.out alu.op_byte[3];         # 10
+    con xor_11.out regs.l.or_set;          # 11(a)
+    con xor_11.out regs.stepc.or_inc;      # 11(b)
+    con xor_11.out cpu_tick;               # 11(c)
+
+    # NOT - Negates the contents of indicated register. Bin 01100
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 4. read regs - then 3 tick delay
+    # 5. set ip1
+    #    - then 2 tick delay
+    # 6. read ALU not output - then 2 tick delay
+    # 7. set l
+    #     increment stepc
+    #     cpu_tick
+    let or not_1;
+    let Timer(6) not_2;
+    let Timer(4) not_3;
+    let Timer(7) not_4;
+    let Timer(3) not_5;
+    let Timer(3) not_6;
+    let Timer(2) not_7;
+    con mult.board[12] not_1;
+    con not_1 not_2.inp;
+    con not_2.out not_3.inp;
+    con not_3.out not_4.inp;
+    con not_4.out not_5.inp;
+    con not_5.out not_6.inp;
+    con not_6.out not_7.inp;
+
+    con not_1 regs.stepc.or_inc;           # 1
+    con not_2.out ram.read;                # 2
+    con not_3.out regs.ip1.or_set;         # 3(a)
+    con not_3.out regs_selector.select[0]; # 3(b)
+    con not_4.out regs.read;               # 4
+    con not_5.out regs.ip1.or_set;         # 5
+    con not_6.out alu.op_byte[4];          # 6
+    con not_7.out regs.l.or_set;           # 7(a)
+    con not_7.out regs.stepc.or_inc;       # 7(b)
+    con not_7.out cpu_tick;                # 7(c)
+
+    # SHL - Shifts the contents of the first register left by the amount specified in the second register. Bin 01101
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then 6 tick delay
+    # 10. read ALU shl output - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    let or shl_1;
+    let Timer(6) shl_2;
+    let Timer(4) shl_3;
+    let Timer(6) shl_4;
+    let Timer(4) shl_5;
+    let Timer(7) shl_6;
+    let Timer(3) shl_7;
+    let Timer(7) shl_8;
+    let Timer(3) shl_9;
+    let Timer(6) shl_10;
+    let Timer(2) shl_11;
+    con mult.board[13] shl_1;
+    con shl_1 shl_2.inp;
+    con shl_2.out shl_3.inp;
+    con shl_3.out shl_4.inp;
+    con shl_4.out shl_5.inp;
+    con shl_5.out shl_6.inp;
+    con shl_6.out shl_7.inp;
+    con shl_7.out shl_8.inp;
+    con shl_8.out shl_9.inp;
+    con shl_9.out shl_10.inp;
+    con shl_10.out shl_11.inp;
+
+    con shl_1 regs.stepc.or_inc;           # 1
+    con shl_2.out ram.read;                # 2
+    con shl_3.out regs.ip1.or_set;         # 3(a)
+    con shl_3.out regs.stepc.or_inc;       # 3(b)
+    con shl_4.out ram.read;                # 4
+    con shl_5.out regs.ip2.or_set;         # 5(a)
+    con shl_5.out regs_selector.select[0]; # 5(b)
+    con shl_6.out regs.read;               # 6
+    con shl_7.out regs.ip1.or_set;         # 7(a)
+    con shl_7.out regs_selector.select[1]; # 7(b)
+    con shl_8.out regs.read;               # 8
+    con shl_9.out regs.ip2.or_set;         # 9
+    con shl_10.out alu.op_byte[5];         # 10
+    con shl_11.out regs.l.or_set;          # 11(a)
+    con shl_11.out regs.stepc.or_inc;      # 11(b)
+    con shl_11.out cpu_tick;               # 11(c)
+
+    # SHR - Shifts the contents of the first register right by the amount specified in the second register. Bin 01110
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2 - then 6 tick delay
+    # 10. read ALU shr output - then 2 tick delay
+    # 11. set l
+    #     increment stepc
+    #     cpu_tick
+    let or shr_1;
+    let Timer(6) shr_2;
+    let Timer(4) shr_3;
+    let Timer(6) shr_4;
+    let Timer(4) shr_5;
+    let Timer(7) shr_6;
+    let Timer(3) shr_7;
+    let Timer(7) shr_8;
+    let Timer(3) shr_9;
+    let Timer(6) shr_10;
+    let Timer(2) shr_11;
+    con mult.board[14] shr_1;
+    con shr_1 shr_2.inp;
+    con shr_2.out shr_3.inp;
+    con shr_3.out shr_4.inp;
+    con shr_4.out shr_5.inp;
+    con shr_5.out shr_6.inp;
+    con shr_6.out shr_7.inp;
+    con shr_7.out shr_8.inp;
+    con shr_8.out shr_9.inp;
+    con shr_9.out shr_10.inp;
+    con shr_10.out shr_11.inp;
+
+    con shr_1 regs.stepc.or_inc;           # 1
+    con shr_2.out ram.read;                # 2
+    con shr_3.out regs.ip1.or_set;         # 3(a)
+    con shr_3.out regs.stepc.or_inc;       # 3(b)
+    con shr_4.out ram.read;                # 4
+    con shr_5.out regs.ip2.or_set;         # 5(a)
+    con shr_5.out regs_selector.select[0]; # 5(b)
+    con shr_6.out regs.read;               # 6
+    con shr_7.out regs.ip1.or_set;         # 7(a)
+    con shr_7.out regs_selector.select[1]; # 7(b)
+    con shr_8.out regs.read;               # 8
+    con shr_9.out regs.ip2.or_set;         # 9
+    con shr_10.out alu.op_byte[6];         # 10
+    con shr_11.out regs.l.or_set;          # 11(a)
+    con shr_11.out regs.stepc.or_inc;      # 11(b)
+    con shr_11.out cpu_tick;               # 11(c)
+
+    # CMP - Compares the contents of the specified registers. Bin 01111
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    change register selection to ip2.mem (mode 1)
+    #    - then 7 tick delay
+    # 8. read regs - then 3 tick delay
+    # 9. set ip2
+    # 10. set eq, gt, lt - then 6 tick delay
+    # 11. blank (timer)
+    # 12. 
+    #     if alu.comparator.eq flag is on -> toggle register eq.
+    #     if alu.comparator.gt flag is on -> toggle register gt.
+    #     if alu.comparator.lt flag is on -> toggle register lt.
+    #     increment stepc
+    #     cpu_tick
+    let or cmp_1;
+    let Timer(6) cmp_2;
+    let Timer(4) cmp_3;
+    let Timer(6) cmp_4;
+    let Timer(4) cmp_5;
+    let Timer(7) cmp_6;
+    let Timer(3) cmp_7;
+    let Timer(7) cmp_8;
+    let Timer(3) cmp_9;
+    let or cmp_10;
+    let Timer(6) cmp_11;
+    let and cmp_12_eq;
+    let and cmp_12_gt;
+    let and cmp_12_lt;
+    let or cmp_12;
+    con mult.board[15] cmp_1;
+    con cmp_1 cmp_2.inp;
+    con cmp_2.out cmp_3.inp;
+    con cmp_3.out cmp_4.inp;
+    con cmp_4.out cmp_5.inp;
+    con cmp_5.out cmp_6.inp;
+    con cmp_6.out cmp_7.inp;
+    con cmp_7.out cmp_8.inp;
+    con cmp_8.out cmp_9.inp;
+    con cmp_9.out cmp_10;
+    con cmp_10 cmp_11.inp;
+    con cmp_11.out cmp_12_eq; #
+    con alu.comparator.eq cmp_12_eq;
+    con cmp_11.out cmp_12_gt;
+    con alu.comparator.gt cmp_12_gt;
+    con cmp_11.out cmp_12_lt;
+    con alu.comparator.lt cmp_12_lt;
+    con cmp_11.out cmp_12;
+
+    con cmp_1 regs.stepc.or_inc;           # 1
+    con cmp_2.out ram.read;                # 2
+    con cmp_3.out regs.ip1.or_set;         # 3(a)
+    con cmp_3.out regs.stepc.or_inc;       # 3(b)
+    con cmp_4.out ram.read;                # 4
+    con cmp_5.out regs.ip2.or_set;         # 5(a)
+    con cmp_5.out regs_selector.select[0]; # 5(b)
+    con cmp_6.out regs.read;               # 6
+    con cmp_7.out regs.ip1.or_set;         # 7(a)
+    con cmp_7.out regs_selector.select[1]; # 7(b)
+    con cmp_8.out regs.read;               # 8
+    con cmp_9.out regs.ip2.or_set;         # 9
+    con cmp_10 regs.eq.or_set;             # 10(a)
+    con cmp_10 regs.gt.or_set;             # 10(b)
+    con cmp_10 regs.lt.or_set;             # 10(c)
+    con cmp_12_eq regs.eq.mem[0];          # 12(a)
+    con cmp_12_gt regs.gt.mem[0];          # 12(b)
+    con cmp_12_lt regs.lt.mem[0];          # 12(c)
+    con cmp_12 regs.stepc.or_inc;          # 12(d)
+    con cmp_12 cpu_tick;                   # 12(e)
+
+    # CMPV - Compares the contents of the specified register to the specified value. Bin 10000
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    # 8. set eq, gt, lt - then 6 tick delay
+    # 9. blank (timer)
+    # 10. 
+    #     if alu.comparator.eq flag is on -> toggle register eq.
+    #     if alu.comparator.gt flag is on -> toggle register gt.
+    #     if alu.comparator.lt flag is on -> toggle register lt.
+    #     increment stepc
+    #     cpu_tick
+    let or cmpv_1;
+    let Timer(6) cmpv_2;
+    let Timer(4) cmpv_3;
+    let Timer(6) cmpv_4;
+    let Timer(4) cmpv_5;
+    let Timer(7) cmpv_6;
+    let Timer(3) cmpv_7;
+    let or cmpv_8;
+    let Timer(6) cmpv_9;
+    let and cmpv_10_eq;
+    let and cmpv_10_gt;
+    let and cmpv_10_lt;
+    let or cmpv_10;
+    con mult.board[16] cmpv_1;
+    con cmpv_1 cmpv_2.inp;
+    con cmpv_2.out cmpv_3.inp;
+    con cmpv_3.out cmpv_4.inp;
+    con cmpv_4.out cmpv_5.inp;
+    con cmpv_5.out cmpv_6.inp;
+    con cmpv_6.out cmpv_7.inp;
+    con cmpv_7.out cmpv_8;
+    con cmpv_8 cmpv_9.inp;
+    con cmpv_9.out cmpv_10_eq; #
+    con alu.comparator.eq cmpv_10_eq;
+    con cmpv_9.out cmpv_10_gt;
+    con alu.comparator.gt cmpv_10_gt;
+    con cmpv_9.out cmpv_10_lt;
+    con alu.comparator.lt cmpv_10_lt;
+    con cmpv_9.out cmpv_10;
+
+    con cmpv_1 regs.stepc.or_inc;           # 1
+    con cmpv_2.out ram.read;                # 2
+    con cmpv_3.out regs.ip1.or_set;         # 3(a)
+    con cmpv_3.out regs.stepc.or_inc;       # 3(b)
+    con cmpv_4.out ram.read;                # 4
+    con cmpv_5.out regs.ip2.or_set;         # 5(a)
+    con cmpv_5.out regs_selector.select[0]; # 5(b)
+    con cmpv_6.out regs.read;               # 6
+    con cmpv_7.out regs.ip1.or_set;         # 7
+    con cmpv_8 regs.eq.or_set;              # 8(a)
+    con cmpv_8 regs.gt.or_set;              # 8(b)
+    con cmpv_8 regs.lt.or_set;              # 8(c)
+    con cmpv_10_eq regs.eq.mem[0];          # 10(a)
+    con cmpv_10_gt regs.gt.mem[0];          # 10(b)
+    con cmpv_10_lt regs.lt.mem[0];          # 10(c)
+    con cmpv_10 regs.stepc.or_inc;          # 10(d)
+    con cmpv_10 cpu_tick;                   # 10(e)
+
+    # SUM - Performs a logic operation on all the bits of the specified register and stores the result in the Q register (0=AND,1=OR,2=XOR,3=NAND,4=NOR,5=XNOR). Bin 10001
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    increment stepc
+    #    - then 6 tick delay
+    # 4. read ram - then 4 tick delay
+    # 5. set ip2
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 6. read regs - then 3 tick delay
+    # 7. set ip1
+    #    - then 6 tick delay
+    # 8. read ALU sum output - then 2 tick delay
+    # 9. set q
+    #     increment stepc
+    #     cpu_tick
+    let or sum_1;
+    let Timer(6) sum_2;
+    let Timer(4) sum_3;
+    let Timer(6) sum_4;
+    let Timer(4) sum_5;
+    let Timer(7) sum_6;
+    let Timer(3) sum_7;
+    let Timer(6) sum_8;
+    let Timer(2) sum_9;
+    con mult.board[17] sum_1;
+    con sum_1 sum_2.inp;
+    con sum_2.out sum_3.inp;
+    con sum_3.out sum_4.inp;
+    con sum_4.out sum_5.inp;
+    con sum_5.out sum_6.inp;
+    con sum_6.out sum_7.inp;
+    con sum_7.out sum_8.inp;
+    con sum_8.out sum_9.inp;
+
+    con sum_1 regs.stepc.or_inc;           # 1
+    con sum_2.out ram.read;                # 2
+    con sum_3.out regs.ip1.or_set;         # 3(a)
+    con sum_3.out regs.stepc.or_inc;       # 3(b)
+    con sum_4.out ram.read;                # 4
+    con sum_5.out regs.ip2.or_set;         # 5(a)
+    con sum_5.out regs_selector.select[0]; # 5(b)
+    con sum_6.out regs.read;               # 6
+    con sum_7.out regs.ip1.or_set;         # 7
+    con sum_8.out alu.op_byte[7];          # 8
+    con sum_9.out regs.q.or_set;           # 9(a)
+    con sum_9.out regs.stepc.or_inc;       # 9(b)
+    con sum_9.out cpu_tick;                # 9(c)
+
+    # RAND - Assigns a random value to register L. Bin 10010
+    # 1. read ALU prng output - then 2 tick delay
+    # 2. set l
+    #     increment stepc
+    #     cpu_tick
+    let or rand_1;
+    let Timer(2) rand_2;
+    con mult.board[18] rand_1;
+    con rand_1 rand_2.inp;
+
+    con rand_1 alu.op_byte[8];        # 1
+    con rand_2.out regs.l.or_set;     # 2(a)
+    con rand_2.out regs.stepc.or_inc; # 2(b)
+    con rand_2.out cpu_tick;          # 2(c)
+
+    # JMA - Jumps to the stored address. Bin 10011
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set stepc
+    #    cpu_tick
+
+    let or jma_1;
+    let Timer(6) jma_2;
+    let Timer(4) jma_3;
+    con mult.board[19] jma_1;
+    con jma_1 jma_2.inp;
+    con jma_2.out jma_3.inp;
+
+    con jma_1 regs.stepc.or_inc;     # 1
+    con jma_2.out ram.read;          # 2
+    con jma_3.out regs.stepc.or_set; # 3(a)
+    con jma_3.out cpu_tick;          # 3(b)
+
+    # JMP - Jumps to the address stored in the specified register. Bin 10100
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 4. read regs - then 3 tick delay
+    # 5. set stepc
+    #    cpu_tick
+    let or jmp_1;
+    let Timer(6) jmp_2;
+    let Timer(4) jmp_3;
+    let Timer(7) jmp_4;
+    let Timer(3) jmp_5;
+    con mult.board[20] jmp_1;
+    con jmp_1 jmp_2.inp;
+    con jmp_2.out jmp_3.inp;
+    con jmp_3.out jmp_4.inp;
+    con jmp_4.out jmp_5.inp;
+
+    con jmp_1 regs.stepc.or_inc;           # 1
+    con jmp_2.out ram.read;                # 2
+    con jmp_3.out regs.ip1.or_set;         # 3(a)
+    con jmp_3.out regs_selector.select[0]; # 3(b)
+    con jmp_4.out regs.read;               # 4
+    con jmp_5.out regs.stepc.or_set;       # 5(a)
+    con jmp_5.out cpu_tick;                # 5(b)
+
+    # to be used for negative cases of conditional jumps
+    let nor neg_q_flag;
+    con regs.q.mem[0] neg_q_flag;
+
+    # JMAC - Jumps to the specified address if the Q flag is high. Bin 10101
+    # 1. increment stepc - then 6 tick delay
+    # 2  blank (timer)
+    # 3.
+    #    if q flag is high ->
+    #       read ram - then 4 tick delay
+    #       set stepc
+    #       cpu_tick
+    #    if q flag is low ->
+    #       increment stepc
+    #       cpu_tick
+    let or jmac_1;
+    let Timer(6) jmac_2;
+    let and jmac_3_q_flag_high;
+    let and jmac_3_q_flag_low;
+    let Timer(4) jmac_3_q_flag_high_b;
+    con mult.board[21] jmac_1;
+    con jmac_1 jmac_2.inp;
+    con jmac_2.out jmac_3_q_flag_high;
+    con regs.q.mem[0] jmac_3_q_flag_high;
+    con jmac_2.out jmac_3_q_flag_low;
+    con neg_q_flag jmac_3_q_flag_low;
+    con jmac_3_q_flag_high jmac_3_q_flag_high_b.inp;
+
+    con jmac_1 regs.stepc.or_inc;                   # 1
+    con jmac_3_q_flag_high ram.read;                # 5(q-high-a)
+    con jmac_3_q_flag_high_b.out regs.stepc.or_set; # 5(q-high-b)
+    con jmac_3_q_flag_high_b.out cpu_tick;          # 5(q-high-c)
+    con jmac_3_q_flag_low regs.stepc.or_inc;        # 5(q-low-a)
+    con jmac_3_q_flag_low cpu_tick;                 # 5(q-low-b)
+
+    # JMPC - Jumps to the address stored in the specified register if the Q flag is high. Bin 10110
+    # 1. increment stepc - then 6 tick delay
+    # 2. read ram - then 4 tick delay
+    # 3. set ip1
+    #    change register selection to ip1.mem (mode 0)
+    #    - then 7 tick delay
+    # 4  blank (timer)
+    # 5. 
+    #    if q flag is high ->
+    #       read regs - then 3 tick delay
+    #       set stepc
+    #       cpu_tick
+    #    if q flag is low ->
+    #       increment stepc
+    #       cpu_tick
+    let or jmpc_1;
+    let Timer(6) jmpc_2;
+    let Timer(4) jmpc_3;
+    let Timer(7) jmpc_4;
+    let and jmpc_5_q_flag_high;
+    let and jmpc_5_q_flag_low;
+    let Timer(3) jmpc_5_q_flag_high_b;
+    con mult.board[22] jmpc_1;
+    con jmpc_1 jmpc_2.inp;
+    con jmpc_2.out jmpc_3.inp;
+    con jmpc_3.out jmpc_4.inp;
+    con jmpc_4.out jmpc_5_q_flag_high;
+    con regs.q.mem[0] jmpc_5_q_flag_high;
+    con jmpc_4.out jmpc_5_q_flag_low;
+    con neg_q_flag jmpc_5_q_flag_low;
+    con jmpc_5_q_flag_high jmpc_5_q_flag_high_b.inp;
+
+    con jmpc_1 regs.stepc.or_inc;                   # 1
+    con jmpc_2.out ram.read;                        # 2
+    con jmpc_3.out regs.ip1.or_set;                 # 3(a)
+    con jmpc_3.out regs_selector.select[0];         # 3(b)
+    con jmpc_5_q_flag_high regs.read;               # 5(q-high-a)
+    con jmpc_5_q_flag_high_b.out regs.stepc.or_set; # 5(q-high-b)
+    con jmpc_5_q_flag_high_b.out cpu_tick;          # 5(q-high-c)
+    con jmpc_5_q_flag_low regs.stepc.or_inc;        # 5(q-low-a)
+    con jmpc_5_q_flag_low cpu_tick;                 # 5(q-low-b)
+    
+    # SUA - Jumps to the specified address, when encounters RET instruction returns to the line after the function call. Bin 10111
+    # 1. increment stepc - then ??? tick delay
+    # 2. read stepc - then ??? tick delay
+    # 3. push stack
+    #    read ram - then 4 tick delay
+    # 4. set stepc
+    #    cpu_tick
+
+    let or jma_1;
+    let Timer(6) jma_2;
+    let Timer(4) jma_3;
+    con mult.board[19] jma_1;
+    con jma_1 jma_2.inp;
+    con jma_2.out jma_3.inp;
+
+    con jma_1 regs.stepc.or_inc;     # 1
+    con jma_2.out ram.read;          # 2
+    con jma_3.out regs.stepc.or_set; # 3(a)
+    con jma_3.out cpu_tick;          # 3(b)
 }
 
 let runtime ()
 {
     hold regs.ra.mem 00010001 1;
-    hold regs.gen_purpose[1].mem 11110000 1;
+    hold regs.gen_purpose[1].mem 00001010 1;
+    hold regs.gen_purpose[2].mem 11100111 1;
+    hold regs.q.mem 0 1;
 
-    hold ram.regs[0].mem  00000100 1;
+    hold ram.regs[0].mem  00010110 1;
     hold ram.regs[1].mem  00000001 1;
-    hold ram.regs[2].mem  00000000 1; 
-    hold ram.regs[3].mem  00000000 1; #
-    hold ram.regs[4].mem  00000010 1;
-    hold ram.regs[5].mem  00000011 1;
-    hold ram.regs[6].mem  00000111 1;
-    hold ram.regs[7].mem  00000001 1;
-    hold ram.regs[8].mem  00000010 1;
+    hold ram.regs[2].mem  00000011 1; 
+    hold ram.regs[3].mem  00000001 1; #
+    hold ram.regs[4].mem  11111111 1;
+    hold ram.regs[5].mem  00000000 1;
+    hold ram.regs[6].mem  00000000 1;
+    hold ram.regs[7].mem  00000000 1;
+    hold ram.regs[8].mem  00000000 1;
     hold ram.regs[9].mem  00000000 1; #
-    hold ram.regs[10].mem 00000000 1;
-    hold ram.regs[11].mem 00000000 1;
-    hold ram.regs[12].mem 00000000 1;
+    hold ram.regs[10].mem 00000011 1;
+    hold ram.regs[11].mem 00000011 1;
+    hold ram.regs[12].mem 11111111 1;
     hold ram.regs[13].mem 00000000 1;
     hold ram.regs[14].mem 00000000 1;
     hold ram.regs[15].mem 00000000 1;
@@ -453,9 +1213,6 @@ let runtime ()
         print "\n";
         print "ra.inc is ";
         print regs.ra.inc;
-        print "\n";
-        print "ram.mult.board is ";
-        print ram.mult.board;
         print "\n";
 
         tick 1;

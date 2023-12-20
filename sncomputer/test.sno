@@ -1,19 +1,19 @@
-import "mem.sno";
+import "alu.sno";
 
 mod Main
 {
-    let or bus[8];
-    let or set_bit;
-    let or set;
+    let Prng_8Bit prng;
 
-    let Reg(8, inc_dec=true) r;
+    
+}
 
-    con bus r.data;
-    for i in (0,7)
+let runtime ()
+{
+    tick 50;
+    for i in (0,60)
     {
-        con set_bit r.data[i];
-        con set_bit r.reset[i];
+        print prng.bits;
+        print "\n";
+        tick 1;
     }
-    con set_bit r.set_flag_turnoff;
-    con set r.set;
 }
